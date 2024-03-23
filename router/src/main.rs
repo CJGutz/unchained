@@ -1,14 +1,12 @@
 pub mod run;
-use run::{ServerOptions, Route, HTTPVerb};
+use run::{ServerOptions, Route, HTTPVerb::*};
 
 fn main() {
     let routes = vec![
-        Route {
-            verb: HTTPVerb::GET,
-            path: String::from("/"),
-            content: String::from("Hei Kristine. Hvordan har du det i dag?"),
+        Route::new(GET, String::from("/"), |_req| String::from("Hello, World!")),
+        Route::new(GET, String::from("/bruh"), |_req| String::from("Hello, bruh!")),
+        Route::new(GET, String::from("/bruh/"), |_req| String::from("Hello, bruh with /!")),
 
-        }
     ];
     run::start_server(routes, ServerOptions {address: None});
 }
