@@ -37,7 +37,7 @@ fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
             HTTPVerb::DELETE => "DELETE",
             HTTPVerb::HEAD => "HEAD",
         };
-        if route_verb == request.verb && route.path == request.path {
+        if route_verb == request.verb && route.path.trim_end_matches("/") == request.path.trim_end_matches("/") {
             return Response {
                 content: Some((route.retrieve_content)(request)),
                 status_code: 200
