@@ -7,23 +7,38 @@ pub struct Request {
     pub headers: HashMap<String, String>,
 }
 
-struct Response {
-    content: Option<String>,
-    status_code: u32,
+pub struct Response {
+    pub content: Option<String>,
+    pub status_code: u32,
+}
+
+impl Response {
+    pub fn new(content: Option<String>, status_code: u32) -> Response {
+        Response {
+            content,
+            status_code,
+        }
+    }
+    pub fn new_200(content: String) -> Response {
+        Response {
+            content: Some(content),
+            status_code: 200,
+        }
+    }
 }
 
 pub struct Route {
     pub verb: HTTPVerb,
     pub path: String,
-    pub retrieve_content: fn(Request) -> String,
+    pub get_response: fn(Request) -> Response,
 }
 
 impl Route {
-    pub fn new(verb: HTTPVerb, path: String, retrieve_content: fn(Request) -> String) -> Route {
+    pub fn new(verb: HTTPVerb, path: String, get_response: fn(Request) -> Response) -> Route {
         Route {
             verb,
             path,
-            retrieve_content,
+            get_response,
         }
     }
 }
@@ -38,13 +53,10 @@ fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
             HTTPVerb::HEAD => "HEAD",
         };
         if route_verb == request.verb && route.path.trim_end_matches("/") == request.path.trim_end_matches("/") {
-            return Response {
-                content: Some((route.retrieve_content)(request)),
-                status_code: 200
-            };
+            return (route.get_response)(request);
         }
     }
-    return Response { content: None, status_code: 404 }
+    return Response::new(None, 404);
 }
 
 fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) {
