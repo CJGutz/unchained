@@ -12,7 +12,7 @@ fn main() {
         Route::new(GET, String::from("/hello/"),   |_req| {
             let mut context = HashMap::new();
             context.insert("title".to_string(), "My website title".to_string());
-            return Response::new_200(template("my_html.html", Some(context)));
+            return Response::new_200(template("my_html.html", Some(context)).unwrap());
         }),
     ];
     run::start_server(routes, ServerOptions {address: None});
