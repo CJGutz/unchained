@@ -1,10 +1,7 @@
-pub mod run;
-pub mod render;
-pub mod error;
 use std::collections::HashMap;
 
-use render::template;
-use run::{ServerOptions, Route, HTTPVerb::*, Response};
+use router::templates::render::template;
+use router::run::{start_server, ServerOptions, Route, HTTPVerb::*, Response};
 
 fn main() {
 
@@ -16,5 +13,5 @@ fn main() {
             return Response::new_200(template("my_html.html", Some(context)).unwrap());
         }),
     ];
-    run::start_server(routes, ServerOptions {address: None});
+    start_server(routes, ServerOptions {address: None});
 }
