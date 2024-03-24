@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+#[derive(Debug)]
 pub struct Match {
     pub from: usize,
     pub to: usize,
@@ -59,14 +60,16 @@ fn remove_between(content: &str, from: &str, to: &str) -> Option<(String, String
 }
 
 
+#[derive(Debug)]
 pub struct TemplateOperationCall {
     pub name: String,
     pub parameters: Vec<String>,
     pub children: Option<String>,
 }
 fn childless_templ_op_call(op_content: &str) -> Option<TemplateOperationCall> {
-    let splitted = op_content.split(" ").map(|s| s.to_string());
+    let splitted = op_content.trim().split(" ").map(|s| s.to_string());
     let name = splitted.clone().take(1).collect::<String>();
+    dbg!(&splitted, &name);
     if name.is_empty() { return None }
     return Some(TemplateOperationCall {
         name,
@@ -120,7 +123,7 @@ type TemplateOperation = fn(TemplateOperationCall, &HashMap<String, String>) -> 
 fn get_template_operation(op_name: &str) -> Option<TemplateOperation> {
     match op_name {
         "loop" => None,
-        "if" => None,
+        "if" => Some(if_operation),
         _ => None,
     }
 }
@@ -144,12 +147,17 @@ pub fn template(path: &str, context: Option<HashMap<String, String>>) -> Result<
         let result = find_between(&content, "{{", "}}");
         if result.is_none() { break; }
         let result = result.unwrap();
+        dbg!(&result);
         if let Some(op_call) = operation_params_and_children(&result.content) {
             if let Some(operation) = get_template_operation(&op_call.name) {
                 let replacement = operation(op_call, context);
                 if replacement.is_err() { return Err(()) }
-                content.replace_range(result.from..result.from+1, &replacement.unwrap())
+                content.replace_range(result.from..result.to+1, &replacement.unwrap())
+            } else {
+                return Err(())
             }
+        } else {
+            return Err(())
         }
     }
     return Ok(content);
