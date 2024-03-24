@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::error::{Error, WebResult};
 
 use super::{
@@ -57,7 +59,7 @@ pub fn get_template_operation(op_name: &str) -> Option<TemplateOperation> {
     match op_name {
         "for" => Some(for_loop_operation),
         "if" => Some(if_operation),
-        _ => None,
+        _ => Some(get_context_operation),
     }
 }
 
@@ -71,6 +73,29 @@ fn unwrap_n_params<'a, const N: usize>(params: &'a Vec<String>) -> WebResult<[&'
     }
     Ok(arr)
 }
+
+
+fn get_context_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
+    let splitted = call.name.split(".");
+    let mut resulting_attribute = String::new();
+    let mut new_context = context.clone();
+    for attribute in splitted {
+        resulting_attribute = match new_context.get(attribute) {
+            Some(Ctx::Leaf(s)) => match s {
+                Str(s) => s.to_string(),
+                Num(n) => n.to_string(),
+                Bool(b) => b.to_string(),
+            },
+            Some(Ctx::Branch(b)) => {
+                new_context = *b.clone();
+                continue;
+            },
+            _ => return Err(Error::InvalidParams),
+        };
+    }
+    Ok(resulting_attribute)
+}
+
 
 fn if_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
     if let Ok([first_param]) = unwrap_n_params::<1>(&call.parameters) {
