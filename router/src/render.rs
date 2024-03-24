@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use crate::error::{WebResult, Error};
+
 #[derive(Debug)]
 pub struct Match {
     pub from: usize,
@@ -38,6 +40,10 @@ fn find_between(content: &str, from: &str, to: &str) -> Option<Match> {
     })
 }
 
+pub fn template_operation(content: &str) -> Option<Match> {
+    find_between(content, "{*", "*}")
+}
+
 /// Removes everything inclusively between the first occurrences
 /// of `from` and `to` and returns it exclusive of the patterns.
 /// Example:
@@ -69,7 +75,6 @@ pub struct TemplateOperationCall {
 fn childless_templ_op_call(op_content: &str) -> Option<TemplateOperationCall> {
     let splitted = op_content.trim().split(" ").map(|s| s.to_string());
     let name = splitted.clone().take(1).collect::<String>();
-    dbg!(&splitted, &name);
     if name.is_empty() { return None }
     return Some(TemplateOperationCall {
         name,
@@ -77,7 +82,7 @@ fn childless_templ_op_call(op_content: &str) -> Option<TemplateOperationCall> {
         children: None,
     })
 }
-fn operation_params_and_children(operation: &str) -> Option<TemplateOperationCall> {
+pub fn operation_params_and_children(operation: &str) -> Option<TemplateOperationCall> {
     if let Some((removed_children, children)) = remove_between(operation, "{", "}") {
         let op_call = childless_templ_op_call(&removed_children);
         return match op_call {
@@ -93,7 +98,7 @@ fn operation_params_and_children(operation: &str) -> Option<TemplateOperationCal
 }
 
 
-fn if_operation(call: TemplateOperationCall, context: &HashMap<String, String>) -> Result<String, ()> {
+fn if_operation(call: TemplateOperationCall, context: &HashMap<String, String>) -> WebResult<String> {
     if let Some(first_param) = call.parameters.first() {
         let display_content = match first_param.as_str() {
             "true" => true,
@@ -109,10 +114,10 @@ fn if_operation(call: TemplateOperationCall, context: &HashMap<String, String>) 
         } 
         return Ok(String::new());
     }
-    Err(())
+    Err(Error::InvalidParams)
 }
 
-type TemplateOperation = fn(TemplateOperationCall, &HashMap<String, String>) -> Result<String, ()>;
+type TemplateOperation = fn(TemplateOperationCall, &HashMap<String, String>) -> WebResult<String>;
 /// Example template operation
 /// ```
 /// {{ if boolean {
@@ -131,33 +136,27 @@ fn get_template_operation(op_name: &str) -> Option<TemplateOperation> {
 /// Render an html file
 /// Use template operations `{{ }}` to add 
 /// functionality to html with given context
-/// ```
-/// if let Some(to_replace_with) = context.get(&m.content.trim().to_owned()) {
-///     content.replace_range(m.from..m.to+1, to_replace_with); 
-/// }
-/// ```
-pub fn template(path: &str, context: Option<HashMap<String, String>>) -> Result<String, ()> {
+pub fn template(path: &str, context: Option<HashMap<String, String>>) -> WebResult<String> {
 
     let content = std::fs::read_to_string(path);
-    if content.is_err() { return Err(()) }
+    if content.is_err() { return Err(Error::LoadFile) }
     let mut content = content.unwrap();
     let context = &context.unwrap_or_default();
 
     loop {
-        let result = find_between(&content, "{{", "}}");
+        let result = template_operation(&content);
         if result.is_none() { break; }
         let result = result.unwrap();
-        dbg!(&result);
         if let Some(op_call) = operation_params_and_children(&result.content) {
             if let Some(operation) = get_template_operation(&op_call.name) {
                 let replacement = operation(op_call, context);
-                if replacement.is_err() { return Err(()) }
+                if replacement.is_err() { return Err(Error::ParseTemplate) }
                 content.replace_range(result.from..result.to+1, &replacement.unwrap())
             } else {
-                return Err(())
+                return Err(Error::ParseTemplate)
             }
         } else {
-            return Err(())
+            return Err(Error::ParseTemplate)
         }
     }
     return Ok(content);

@@ -1,5 +1,6 @@
 pub mod run;
 pub mod render;
+pub mod error;
 use std::collections::HashMap;
 
 use render::template;
