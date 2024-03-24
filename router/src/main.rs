@@ -1,17 +1,22 @@
-pub mod templates;
-pub mod error;
 use std::collections::HashMap;
 
-use router::templates::render::template;
-use router::run::{start_server, ServerOptions, Route, HTTPVerb::*, Response};
+use router::{
+    run::{start_server, ServerOptions, Route, HTTPVerb::*, Response},
+    templates::{
+        render::template,
+        context::{ContextTree as Ctx, Primitive::*},
+    }
+};
 
 fn main() {
 
     let routes = vec![
-        Route::new(GET, String::from("/"), |_req| Response::new_200(String::from("Hello, World!"))),
         Route::new(GET, String::from("/hello/"),   |_req| {
             let mut context = HashMap::new();
-            context.insert("title".to_string(), "My website title".to_string());
+            context.insert("list".to_string(), Ctx::Array(Box::new(vec![
+                Ctx::Leaf(Str("Hello".to_string())),
+                Ctx::Leaf(Str("World".to_string())),
+            ])));
             return Response::new_200(template("my_html.html", Some(context)).unwrap());
         }),
     ];

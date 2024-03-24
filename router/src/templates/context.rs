@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Primitive {
     Str(String),
     Num(isize),
     Bool(bool),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ContextTree {
     Leaf(Primitive),
     Array(Box<Vec<ContextTree>>),

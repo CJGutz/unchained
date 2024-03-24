@@ -1,6 +1,10 @@
-use crate::{templates::text_parse::{find_between, Match, remove_between}, error::{Error, WebResult}};
+use crate::error::{Error, WebResult};
 
-use super::context::{ContextMap, ContextTree as Ctx, Primitive::*};
+use super::{
+    text_parse::{find_between, Match, remove_between}, 
+    context::{ContextMap, ContextTree as Ctx, Primitive::*},
+    render::render_html
+};
 
 pub fn template_operation(content: &str) -> Option<Match> {
     find_between(content, "{*", "*}")
@@ -41,9 +45,36 @@ pub fn operation_params_and_children(operation: &str) -> Option<TemplateOperatio
 }
 
 
+type TemplateOperation = fn(TemplateOperationCall, &ContextMap) -> WebResult<String>;
+/// Example template operation
+/// ```
+/// {{ if boolean {
+///  <div>Renders if true</div>
+/// }
+/// }}
+/// ```
+pub fn get_template_operation(op_name: &str) -> Option<TemplateOperation> {
+    match op_name {
+        "for" => Some(for_loop_operation),
+        "if" => Some(if_operation),
+        _ => None,
+    }
+}
+
+fn unwrap_n_params<'a, const N: usize>(params: &'a Vec<String>) -> WebResult<[&'a str; N]> {
+    let mut arr = [""; N];
+    if params.len() != N {
+        return Err(Error::InvalidParams);
+    }
+    for (i, param) in params.iter().enumerate() {
+        arr[i] = param.as_str();
+    }
+    Ok(arr)
+}
+
 fn if_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
-    if let Some(first_param) = call.parameters.first() {
-        let display_content = match first_param.as_str() {
+    if let Ok([first_param]) = unwrap_n_params::<1>(&call.parameters) {
+        let display_content = match first_param {
             "true" => true,
             "false" => false,
             _ => {
@@ -61,18 +92,25 @@ fn if_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<
     Err(Error::InvalidParams)
 }
 
-type TemplateOperation = fn(TemplateOperationCall, &ContextMap) -> WebResult<String>;
-/// Example template operation
-/// ```
-/// {{ if boolean {
-///  <div>Renders if true</div>
-/// }
-/// }}
-/// ```
-pub fn get_template_operation(op_name: &str) -> Option<TemplateOperation> {
-    match op_name {
-        "loop" => None,
-        "if" => Some(if_operation),
-        _ => None,
+fn for_loop_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
+    let param_slice = unwrap_n_params::<3>(&call.parameters);
+    let (element, range_key) = match param_slice {
+        Ok([element, "in", range]) => (element, range),
+        _ => return Err(Error::InvalidParams)
+    };
+    let range = match context.get(range_key) {
+        Some(Ctx::Array(arr)) => arr,
+        _ => return Err(Error::InvalidParams),
+    };
+    let children = match call.children {
+        Some(children) => children,
+        None => return Err(Error::InvalidParams),
+    };
+    let mut new_context = context.clone();
+    let mut iterated_content = String::new();
+    for item in range.iter() {
+        new_context.insert(element.to_string(), (*item).clone());
+        iterated_content.push_str(render_html(children.clone(), None).unwrap().as_str());
     }
+    Ok(String::new())
 }
