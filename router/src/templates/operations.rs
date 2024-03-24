@@ -1,5 +1,6 @@
 use crate::{templates::text_parse::{find_between, Match, remove_between}, error::{Error, WebResult}};
-use std::collections::HashMap;
+
+use super::context::{ContextMap, ContextTree as Ctx, Primitive::*};
 
 pub fn template_operation(content: &str) -> Option<Match> {
     find_between(content, "{*", "*}")
@@ -12,6 +13,7 @@ pub struct TemplateOperationCall {
     pub parameters: Vec<String>,
     pub children: Option<String>,
 }
+
 fn childless_templ_op_call(op_content: &str) -> Option<TemplateOperationCall> {
     let splitted = op_content.trim().split(" ").map(|s| s.to_string());
     let name = splitted.clone().take(1).collect::<String>();
@@ -22,6 +24,7 @@ fn childless_templ_op_call(op_content: &str) -> Option<TemplateOperationCall> {
         children: None,
     })
 }
+
 pub fn operation_params_and_children(operation: &str) -> Option<TemplateOperationCall> {
     if let Some((removed_children, children)) = remove_between(operation, "{", "}") {
         let op_call = childless_templ_op_call(&removed_children);
@@ -38,15 +41,16 @@ pub fn operation_params_and_children(operation: &str) -> Option<TemplateOperatio
 }
 
 
-fn if_operation(call: TemplateOperationCall, context: &HashMap<String, String>) -> WebResult<String> {
+fn if_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
     if let Some(first_param) = call.parameters.first() {
         let display_content = match first_param.as_str() {
             "true" => true,
             "false" => false,
             _ => {
-                let attribute = context.get(first_param);
-                attribute.is_some() && attribute.unwrap().as_str() == "true" // TODO: Store context
-                // with primitive values
+                match context.get(first_param) {
+                    Some(Ctx::Leaf(Bool(bool))) => *bool,
+                    _ => return Err(Error::InvalidParams),
+                }
             }
         };
         if display_content {
@@ -57,7 +61,7 @@ fn if_operation(call: TemplateOperationCall, context: &HashMap<String, String>) 
     Err(Error::InvalidParams)
 }
 
-type TemplateOperation = fn(TemplateOperationCall, &HashMap<String, String>) -> WebResult<String>;
+type TemplateOperation = fn(TemplateOperationCall, &ContextMap) -> WebResult<String>;
 /// Example template operation
 /// ```
 /// {{ if boolean {

@@ -1,3 +1,5 @@
+pub mod templates;
+pub mod error;
 use std::collections::HashMap;
 
 use router::templates::render::template;
