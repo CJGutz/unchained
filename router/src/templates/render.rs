@@ -15,7 +15,7 @@ pub fn render_html(mut content: String, context: Option<ContextMap>) -> WebResul
         if let Some(op_call) = operation_params_and_children(&result.content) {
             if let Some(operation) = get_template_operation(&op_call.name) {
                 let replacement = operation(op_call, context);
-                if replacement.is_err() { return Err(Error::ParseTemplate) }
+                if replacement.is_err() { return Err(replacement.unwrap_err()) }
                 content.replace_range(result.from..result.to+1, &replacement.unwrap())
             } else {
                 return Err(Error::ParseTemplate)

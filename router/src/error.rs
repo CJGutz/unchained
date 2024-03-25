@@ -2,7 +2,7 @@
 pub enum Error {
     ParseTemplate,
     LoadFile,
-    InvalidParams,
+    InvalidParams(String),
 }
 
 pub type WebResult<T> = Result<T, Error>;

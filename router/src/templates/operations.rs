@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::error::{Error, WebResult};
 
 use super::{
@@ -59,14 +57,16 @@ pub fn get_template_operation(op_name: &str) -> Option<TemplateOperation> {
     match op_name {
         "for" => Some(for_loop_operation),
         "if" => Some(if_operation),
-        _ => Some(get_context_operation),
+        _ => Some(get_attribute_from_context_operation),
     }
 }
 
 fn unwrap_n_params<'a, const N: usize>(params: &'a Vec<String>) -> WebResult<[&'a str; N]> {
+    dbg!(&params);
     let mut arr = [""; N];
+    dbg!(params.len(), N);
     if params.len() != N {
-        return Err(Error::InvalidParams);
+        return Err(Error::InvalidParams(format!("Expected {N} parameters, got {}", params.len())));
     }
     for (i, param) in params.iter().enumerate() {
         arr[i] = param.as_str();
@@ -75,25 +75,28 @@ fn unwrap_n_params<'a, const N: usize>(params: &'a Vec<String>) -> WebResult<[&'
 }
 
 
-fn get_context_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
+fn get_attribute_from_context_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
     let splitted = call.name.split(".");
-    let mut resulting_attribute = String::new();
+    let mut resulting_attribute = None;
     let mut new_context = context.clone();
     for attribute in splitted {
         resulting_attribute = match new_context.get(attribute) {
-            Some(Ctx::Leaf(s)) => match s {
+            Some(Ctx::Leaf(s)) => Some(match s {
                 Str(s) => s.to_string(),
                 Num(n) => n.to_string(),
                 Bool(b) => b.to_string(),
-            },
+            }),
             Some(Ctx::Branch(b)) => {
                 new_context = *b.clone();
                 continue;
             },
-            _ => return Err(Error::InvalidParams),
+            _ => return Err(Error::InvalidParams("Invalid".to_string())),
         };
     }
-    Ok(resulting_attribute)
+    if resulting_attribute.is_none() {
+        return Err(Error::InvalidParams("Invalid property access".to_string()));
+    }
+    Ok(resulting_attribute.unwrap())
 }
 
 
@@ -105,7 +108,7 @@ fn if_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<
             _ => {
                 match context.get(first_param) {
                     Some(Ctx::Leaf(Bool(bool))) => *bool,
-                    _ => return Err(Error::InvalidParams),
+                    _ => return Err(Error::InvalidParams("Invalid".to_string())),
                 }
             }
         };
@@ -114,26 +117,29 @@ fn if_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<
         } 
         return Ok(String::new());
     }
-    Err(Error::InvalidParams)
+    Err(Error::InvalidParams("Invalid".to_string()))
 }
 
 fn for_loop_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
     let param_slice = unwrap_n_params::<3>(&call.parameters);
+    dbg!(&param_slice);
     let (element, range_key) = match param_slice {
         Ok([element, "in", range]) => (element, range),
-        _ => return Err(Error::InvalidParams)
+        _ => return Err(Error::InvalidParams("Invalid".to_string()))
     };
+    dbg!(&range_key);
     let range = match context.get(range_key) {
         Some(Ctx::Array(arr)) => arr,
-        _ => return Err(Error::InvalidParams),
+        _ => return Err(Error::InvalidParams("Invalid".to_string())),
     };
     let children = match call.children {
         Some(children) => children,
-        None => return Err(Error::InvalidParams),
+        None => return Err(Error::InvalidParams("Invalid".to_string())),
     };
     let mut new_context = context.clone();
     let mut iterated_content = String::new();
     for item in range.iter() {
+        dbg!(&item);
         new_context.insert(element.to_string(), (*item).clone());
         iterated_content.push_str(render_html(children.clone(), None).unwrap().as_str());
     }
