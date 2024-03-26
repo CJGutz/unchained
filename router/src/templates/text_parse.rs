@@ -37,8 +37,33 @@ pub fn find_between(content: &str, from: &str, to: &str) -> Option<Match> {
     })
 }
 
+
+fn min<T>(a: T, b: T) -> T where T: PartialOrd {
+    if a < b { a } else { b }
+}
+
+fn pattern_index_in_full(full: &str, slice: &str, pattern: &str, current_index: usize) -> Option<usize> {
+    if slice.contains(|c| pattern.contains(c)) {
+        let pattern_len = pattern.len();
+        let start_check = if current_index < 2*pattern_len + 1 { 0 }
+        else { current_index - 2*pattern_len + 1 };
+        let end_check = min(full.len(), current_index + pattern_len);
+        
+        let pattern_index = full[start_check..end_check].find(pattern);
+        return match pattern_index {
+            Some(index) => Some(index + start_check),
+            None => None,
+        };
+    }
+    None
+}
+
 /// Expects opening to be the same length as closing.
 pub fn between_connected_patterns(content: &str, opening: &str, closing: &str) -> Option<Match> {
+
+    if opening == closing {
+        return find_between(content, opening, closing);
+    }
     let opening_len = opening.len();
 
     let mut open_patterns = 0;
@@ -46,21 +71,33 @@ pub fn between_connected_patterns(content: &str, opening: &str, closing: &str) -
     let mut open_pattern_index: Option<usize> = None;
     while i <= content.len() {
         let slice_check = &content[i-opening_len..i];
-        dbg!(slice_check);
-        if slice_check.contains(|c| opening.contains(c)) {
-            println!("contains!");
+        dbg!(&slice_check);
+        let open_index = pattern_index_in_full(content, slice_check, opening, i);
+        let close_index = pattern_index_in_full(content, slice_check, closing, i);
+        dbg!(open_index, close_index);
 
-            let start_check = if i < 2*opening_len + 1 { 0 }
-            else { i - 2*opening_len + 1 };
-
-            let pattern_index = &content[start_check..i].find(opening);
-            if let Some(index) = pattern_index {
-                open_patterns += 1;
-                open_pattern_index = Some(*index + start_check);
-                dbg!(open_pattern_index);
+        if open_index.is_some() {
+            open_patterns += 1;
+            if open_pattern_index.is_none() {
+                open_pattern_index = open_index;
+            }
+        }
+        if let Some(close_index) = close_index {
+            open_patterns -= 1;
+            dbg!(open_patterns, open_pattern_index);
+            if open_patterns == 0 && open_pattern_index.is_some() {
+                return Some(Match {
+                    from: open_pattern_index.unwrap(),
+                    to: close_index + opening_len - 1,
+                    content: content[(open_pattern_index.unwrap()+opening_len)..close_index].to_string()
+                });
             }
         }
         i += opening_len*2 - 1;
+        if i > content.len() && opening_len > 1 {
+            i -= 1; 
+        }
+        dbg!(i);
     };
 
     None
@@ -167,7 +204,7 @@ mod tests {
     #[test]
     fn test_multi_char_opening_pattern() {
         let content = "content {* with a pattern and {* another pattern *}  *}";
-        let res = between_connected_patterns(content, "{", "}");
+        let res = between_connected_patterns(content, "{*", "*}");
         assert!(res.is_some());
         let res = res.unwrap();
         assert_eq!(res.content, " with a pattern and {* another pattern *}  ");
@@ -178,8 +215,38 @@ mod tests {
     #[test]
     fn test_no_closing_pattern() {
         let content = "content {* with a pattern and {* another pattern *}";
-        let res = between_connected_patterns(content, "{", "}");
+        let res = between_connected_patterns(content, "{*", "*}");
         assert!(res.is_none());
+    }
+
+    #[test]
+    fn test_closing_bracket_first() {
+        let content = "content *} with a pattern and {* another pattern";
+        let res = between_connected_patterns(content, "{*", "*}");
+        assert!(res.is_none());
+    }
+
+    #[test]
+    fn test_empty_between_opening_and_closing() {
+        let content = "{**}";
+        let res = between_connected_patterns(content, "{*", "*}");
+        dbg!(&res);
+        assert!(res.is_some());
+        let res = res.unwrap();
+        assert_eq!(res.content, "");
+        assert_eq!(res.from, 0);
+        assert_eq!(res.to, 3);
+    }
+
+    #[test]
+    fn test_closing_bracket_first_before_valid_patterns() {
+        let content = "content *} with a pattern and {* another pattern {* *}  *}";
+        let res = between_connected_patterns(content, "{*", "*}");
+        assert!(res.is_some());
+        let res = res.unwrap();
+        assert_eq!(res.content, " another pattern {* ");
+        assert_eq!(res.from, 30);
+        assert_eq!(res.to, 53);
     }
 
     #[test]
