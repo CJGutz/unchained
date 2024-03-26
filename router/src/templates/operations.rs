@@ -1,13 +1,13 @@
 use crate::error::{Error, WebResult};
 
 use super::{
-    text_parse::{find_between, Match, remove_between}, 
+    text_parse::{Match, between_connected_patterns}, 
     context::{ContextMap, ContextTree as Ctx, Primitive::*},
     render::render_html
 };
 
 pub fn template_operation(content: &str) -> Option<Match> {
-    find_between(content, "{*", "*}")
+    between_connected_patterns(content, "{*", "*}")
 }
 
 
@@ -30,23 +30,19 @@ fn childless_templ_op_call(op_content: &str) -> Option<TemplateOperationCall> {
 }
 
 pub fn operation_params_and_children(operation: &str) -> Option<TemplateOperationCall> {
-    let mut open_brackets = 0;
-    for character in operation.chars() {
-        if character == '{' {
-            open_brackets += 1;
-        } else if character == '}' {
-            open_brackets -= 1;
-        }
-    }
+    let find = between_connected_patterns(operation, "{", "}");
 
+    if let Some(find) = find {
+        let mut operation = operation.to_string();
+        dbg!(&operation);
+        operation.replace_range(find.from..find.to+1, "");
+        dbg!(&operation);
 
-
-    if let Some((removed_children, children)) = remove_between(operation, "{", "}") {
-        let op_call = childless_templ_op_call(&removed_children);
+        let op_call = childless_templ_op_call(&operation);
         return match op_call {
             None => None,
             Some(mut operation) => {
-                operation.children = Some(children);
+                operation.children = Some(find.content);
                 return Some(operation);
             }
         };
@@ -133,26 +129,23 @@ fn if_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<
 
 fn for_loop_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
     let param_slice = unwrap_n_params::<3>(&call.parameters);
-    dbg!(&param_slice);
     let (element, range_key) = match param_slice {
         Ok([element, "in", range]) => (element, range),
-        _ => return Err(Error::InvalidParams("Invalid".to_string()))
+        _ => return Err(Error::InvalidParams("Invalid param slice".to_string()))
     };
-    dbg!(&range_key);
     let range = match context.get(range_key) {
         Some(Ctx::Array(arr)) => arr,
-        _ => return Err(Error::InvalidParams("Invalid".to_string())),
+        _ => return Err(Error::InvalidParams("Invalid range".to_string())),
     };
     let children = match call.children {
         Some(children) => children,
-        None => return Err(Error::InvalidParams("Invalid".to_string())),
+        None => return Err(Error::InvalidParams("Invalid children".to_string())),
     };
     let mut new_context = context.clone();
     let mut iterated_content = String::new();
     for item in range.iter() {
-        dbg!(&item);
         new_context.insert(element.to_string(), (*item).clone());
-        iterated_content.push_str(render_html(children.clone(), None).unwrap().as_str());
+        iterated_content.push_str(render_html(children.clone(), Some(new_context.to_owned())).unwrap().as_str());
     }
-    Ok(String::new())
+    Ok(iterated_content)
 }

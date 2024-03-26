@@ -71,10 +71,8 @@ pub fn between_connected_patterns(content: &str, opening: &str, closing: &str) -
     let mut open_pattern_index: Option<usize> = None;
     while i <= content.len() {
         let slice_check = &content[i-opening_len..i];
-        dbg!(&slice_check);
         let open_index = pattern_index_in_full(content, slice_check, opening, i);
         let close_index = pattern_index_in_full(content, slice_check, closing, i);
-        dbg!(open_index, close_index);
 
         if open_index.is_some() {
             open_patterns += 1;
@@ -84,7 +82,6 @@ pub fn between_connected_patterns(content: &str, opening: &str, closing: &str) -
         }
         if let Some(close_index) = close_index {
             open_patterns -= 1;
-            dbg!(open_patterns, open_pattern_index);
             if open_patterns == 0 && open_pattern_index.is_some() {
                 return Some(Match {
                     from: open_pattern_index.unwrap(),
@@ -97,7 +94,6 @@ pub fn between_connected_patterns(content: &str, opening: &str, closing: &str) -
         if i > content.len() && opening_len > 1 {
             i -= 1; 
         }
-        dbg!(i);
     };
 
     None
@@ -230,7 +226,6 @@ mod tests {
     fn test_empty_between_opening_and_closing() {
         let content = "{**}";
         let res = between_connected_patterns(content, "{*", "*}");
-        dbg!(&res);
         assert!(res.is_some());
         let res = res.unwrap();
         assert_eq!(res.content, "");
