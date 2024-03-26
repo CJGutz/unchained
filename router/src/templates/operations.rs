@@ -30,6 +30,17 @@ fn childless_templ_op_call(op_content: &str) -> Option<TemplateOperationCall> {
 }
 
 pub fn operation_params_and_children(operation: &str) -> Option<TemplateOperationCall> {
+    let mut open_brackets = 0;
+    for character in operation.chars() {
+        if character == '{' {
+            open_brackets += 1;
+        } else if character == '}' {
+            open_brackets -= 1;
+        }
+    }
+
+
+
     if let Some((removed_children, children)) = remove_between(operation, "{", "}") {
         let op_call = childless_templ_op_call(&removed_children);
         return match op_call {
