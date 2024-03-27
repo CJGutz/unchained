@@ -1,9 +1,89 @@
+use crate::error::WebResult;
 
 #[derive(Debug)]
 pub struct Match {
     pub from: usize,
     pub to: usize,
     pub content: String,
+}
+
+trait FindGrapheme {
+    fn find_grapheme(&self, grapheme: &str) -> Option<usize>;
+}
+
+impl FindGrapheme for &str {
+    fn find_grapheme(&self, grapheme: &str) -> Option<usize> {
+        let mut grapheme_chars = grapheme.chars();
+        let mut grapheme_char = match grapheme_chars.next() {
+            Some(c) => c,
+            None => return None,
+        };
+        let mut index_match: Option<usize> = None;
+        for (i, c) in self.char_indices() {
+            if c != grapheme_char {
+                grapheme_chars = grapheme.chars();
+                grapheme_char = match grapheme_chars.next() {
+                    Some(c) => c,
+                    None => return None,
+                };
+                index_match = None;
+            }
+            if c == grapheme_char {
+                if index_match.is_none() {
+                    index_match = Some(i);
+                }
+                grapheme_char = match grapheme_chars.next() {
+                    Some(c) => c,
+                    None => return index_match,
+                };
+            }
+        }
+        None
+    }
+}
+
+pub fn from_slice(s: &str, begin: usize) -> &str {
+    slice(s, begin, len(s))
+}
+
+pub fn till_slice(s: &str, end: usize) -> &str {
+    slice(s, 0, end)
+}
+
+pub fn len(s: &str) -> usize {
+    s.chars().count()
+}
+
+pub fn slice(s: &str, begin: usize, end: usize) -> &str {
+    if end < begin {
+        return "";
+    }
+
+    s.char_indices()
+        .nth(begin)
+        .and_then(|(start_pos, _)| {
+            if end >= len(s) {
+                return Some(&s[start_pos..]);
+            }
+
+            s[start_pos..]
+                .char_indices()
+                .nth(end - begin)
+                .map(|(end_pos, _)| &s[start_pos..start_pos + end_pos])
+        })
+        .unwrap_or("")
+}
+
+pub fn slice_utf8<'a>(content: &'a str, start: Option<usize>, end: Option<usize>) -> WebResult<&'a str> {
+    let mut chars = content.char_indices();
+    let start = start.map(|s| chars.nth(s).expect(&format!("Could not get the {s:?}th start element")).0);
+    let end = end.map(|e| chars.nth(e - start.unwrap_or(0)).expect(&format!("Could not get the {e:?}th end element. {chars:?}")).0);
+    Ok(match (start, end) {
+        (Some(start), Some(end)) => &content[start..end],
+        (Some(start), None) => &content[start..],
+        (None, Some(end)) => &content[..end],
+        (None, None) => content,
+    })
 }
 
 
@@ -19,21 +99,21 @@ pub struct Match {
 /// assert_eq!(found.to, 33);
 /// ```
 pub fn find_between(content: &str, from: &str, to: &str) -> Option<Match> {
-    let from_index = match content.find(from) {
+    let from_index = match content.find_grapheme(from) {
         Some(index) => index,
         None => return None,
     }; 
-    let after_from = &content[(from_index+from.len())..]; 
-    let to_index = match after_from.find(to) {
+    let after_from = from_slice(content, from_index+from.len());
+    let to_index = match after_from.find_grapheme(to) {
         Some(index) => index,
         None => return None,
     };  
-    let content_inside = after_from[..to_index].to_string(); 
+    let content_inside = till_slice(after_from, to_index);
 
     Some(Match {
         from: from_index,
         to: to_index + from_index + from.len() + to.len() - 1,
-        content: content_inside
+        content: content_inside.to_string()
     })
 }
 
@@ -42,14 +122,14 @@ fn min<T>(a: T, b: T) -> T where T: PartialOrd {
     if a < b { a } else { b }
 }
 
-fn pattern_index_in_full(full: &str, slice: &str, pattern: &str, current_index: usize) -> Option<usize> {
-    if slice.contains(|c| pattern.contains(c)) {
+fn pattern_index_in_full(full: &str, slice_str: &str, pattern: &str, current_index: usize) -> Option<usize> {
+    if slice_str.contains(|c| pattern.contains(c)) {
         let pattern_len = pattern.len();
         let start_check = if current_index < 2*pattern_len + 1 { 0 }
         else { current_index - 2*pattern_len + 1 };
         let end_check = min(full.len(), current_index + pattern_len);
         
-        let pattern_index = full[start_check..end_check].find(pattern);
+        let pattern_index = slice(full, start_check, end_check).find_grapheme(pattern);
         return match pattern_index {
             Some(index) => Some(index + start_check),
             None => None,
@@ -70,7 +150,7 @@ pub fn between_connected_patterns(content: &str, opening: &str, closing: &str) -
     let mut i = opening_len;
     let mut open_pattern_index: Option<usize> = None;
     while i <= content.len() {
-        let slice_check = &content[i-opening_len..i];
+        let slice_check = slice(content, i-opening_len, i);
         let open_index = pattern_index_in_full(content, slice_check, opening, i);
         let close_index = pattern_index_in_full(content, slice_check, closing, i);
 
@@ -86,7 +166,7 @@ pub fn between_connected_patterns(content: &str, opening: &str, closing: &str) -
                 return Some(Match {
                     from: open_pattern_index.unwrap(),
                     to: close_index + opening_len - 1,
-                    content: content[(open_pattern_index.unwrap()+opening_len)..close_index].to_string()
+                    content: slice(content, open_pattern_index.unwrap()+opening_len, close_index).to_string(),
                 });
             }
         }
@@ -122,7 +202,7 @@ pub fn remove_between(content: &str, from: &str, to: &str) -> Option<(String, St
 
 #[cfg(test)]
 mod tests {
-    use crate::templates::text_parse::{find_between, remove_between, between_connected_patterns};
+    use crate::templates::text_parse::{find_between, remove_between, between_connected_patterns, slice, FindGrapheme};
     #[test]
     fn test_get_between_in_one_line_match_w_equal_patterns() {
         let found = find_between("content that | contains patterns |", "|", "|");
@@ -253,5 +333,30 @@ mod tests {
         assert_eq!(res.content, " with a pattern and ");
         assert_eq!(res.from, 8);
         assert_eq!(res.to, 29);
+    }
+
+    #[test]
+    fn test_equal_open_and_closing__() {
+        let content = "content | with a pattern and | another pattern |";
+        let res = between_connected_patterns(content, "|", "|");
+        assert!(res.is_some());
+        let res = res.unwrap();
+        assert_eq!(res.content, " with a pattern and ");
+        assert_eq!(res.from, 8);
+        assert_eq!(res.to, 29);
+    }
+
+    #[test]
+    fn slice_aa() {
+        let content = "cåüååontent";
+        let res = slice(content, 0, 4);
+        assert_eq!(res, "cåüå");
+    }
+
+    #[test]
+    fn find_grapheme_through_utf8() {
+        let content = "cåüååontent";
+        let res = content.find_grapheme("å");
+        assert_eq!(res, Some(1));
     }
 }

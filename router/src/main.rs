@@ -20,7 +20,7 @@ fn main() {
             context.insert("title".to_string(), Ctx::Branch(Box::new(HashMap::from([
                 ("title".to_string(), Ctx::Leaf(Str(String::from("Søk til meg pls")))),
             ]))));
-            let template = template("my_html.html", Some(context));
+            let template = template("gutz_html.html", Some(context));
             return match template {
                 Ok(template) => Response::new_200(template),
                 Err(e) => panic!("Error: {}", match e {

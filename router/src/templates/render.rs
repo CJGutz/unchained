@@ -1,9 +1,12 @@
+use std::{io::{BufReader, Read, Error as IOError}, fs::File};
+
 use crate::error::{WebResult, Error};
 
 use super::{
     context::ContextMap,
     operations::{template_operation, get_template_operation, operation_params_and_children}
 };
+
 
 pub fn render_html(mut content: String, context: Option<ContextMap>) -> WebResult<String> {
     let context = &context.unwrap_or_default();

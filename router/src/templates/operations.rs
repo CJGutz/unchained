@@ -34,9 +34,7 @@ pub fn operation_params_and_children(operation: &str) -> Option<TemplateOperatio
 
     if let Some(find) = find {
         let mut operation = operation.to_string();
-        dbg!(&operation);
         operation.replace_range(find.from..find.to+1, "");
-        dbg!(&operation);
 
         let op_call = childless_templ_op_call(&operation);
         return match op_call {
@@ -69,9 +67,7 @@ pub fn get_template_operation(op_name: &str) -> Option<TemplateOperation> {
 }
 
 fn unwrap_n_params<'a, const N: usize>(params: &'a Vec<String>) -> WebResult<[&'a str; N]> {
-    dbg!(&params);
     let mut arr = [""; N];
-    dbg!(params.len(), N);
     if params.len() != N {
         return Err(Error::InvalidParams(format!("Expected {N} parameters, got {}", params.len())));
     }
