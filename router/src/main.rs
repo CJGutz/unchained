@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use router::{
-    run::{start_server, ServerOptions, Route, HTTPVerb::*, Response},
+    run::{start_server, ServerOptions, Route, HTTPVerb::*, Response, ResponseContent},
     templates::{
         render::template,
         context::{ContextTree as Ctx, Primitive::*},
@@ -24,7 +24,7 @@ fn main() {
     println!("Finished rendering after {} s", duration.as_secs_f64());
 
     let routes = vec![
-        Route::new(GET, String::from("/hello/"), move |_req| {
+        Route::new(GET, String::from("/"), ResponseContent::Create(Box::new(move |_req| {
             return match &template {
                 Ok(template) => Response::new_200(template.to_string()),
                 Err(e) => panic!("Error: {}", match e {
@@ -33,7 +33,8 @@ fn main() {
                     _ => "Unknown error".to_string(),
                 }),
             };
-        }),
+        }))),
+        Route::new(GET, String::from("/images/*"), ResponseContent::None)
     ];
     start_server(routes, ServerOptions {address: None});
 }

@@ -1,4 +1,4 @@
-use std::{net::{TcpListener, TcpStream}, io::{BufRead, Write, BufReader}, collections::HashMap};
+use std::{net::{TcpListener, TcpStream}, io::{BufRead, Write, BufReader}, collections::HashMap, path::PathBuf};
 
 pub struct Request {
     pub verb: String,
@@ -8,38 +8,44 @@ pub struct Request {
 }
 
 pub struct Response {
-    pub content: Option<String>,
+    pub bytes: Option<Vec<u8>>,
     pub status_code: u32,
 }
 
 impl Response {
     pub fn new(content: Option<String>, status_code: u32) -> Response {
         Response {
-            content,
+            bytes: content.map(|s| s.as_bytes().to_vec()),
             status_code,
         }
     }
     pub fn new_200(content: String) -> Response {
         Response {
-            content: Some(content),
+            bytes: Some(content.as_bytes().to_vec()),
             status_code: 200,
         }
     }
 }
 
+pub enum ResponseContent {
+    Str(String),
+    Bytes(Vec<u8>),
+    Create(Box<dyn Fn(Request) -> Response>),
+    None,
+}
+
 pub struct Route {
     pub verb: HTTPVerb,
     pub path: String,
-    pub get_response: Box<dyn Fn(Request) -> Response>,
+    pub response: ResponseContent,
 }
 
 impl Route {
-    pub fn new<'a, T>(verb: HTTPVerb, path: String, get_response: T) -> Route
-    where T: Fn(Request) -> Response + 'static {
+    pub fn new(verb: HTTPVerb, path: String, response: ResponseContent) -> Route {
         Route {
             verb,
             path,
-            get_response: Box::new(get_response),
+            response
         }
     }
 }
@@ -53,8 +59,23 @@ fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
             HTTPVerb::DELETE => "DELETE",
             HTTPVerb::HEAD => "HEAD",
         };
-        if route_verb == request.verb && route.path.trim_end_matches("/") == request.path.trim_end_matches("/") {
-            return (route.get_response)(request);
+        if route.path.ends_with("*") && request.path.contains(route.path.trim_end_matches("*")) {
+            let buf = PathBuf::from(&request.path.trim_start_matches("/"));
+            let file = std::fs::read(buf).ok();
+            return Response {
+                bytes: file.clone(),
+                status_code: if file.is_some() { 200 } else { 404 },
+            };
+        } else if route_verb == request.verb && route.path.trim_end_matches("/") == request.path.trim_end_matches("/") {
+            return match &route.response {
+                ResponseContent::Str(s) => Response::new_200(s.to_string()),
+                ResponseContent::Bytes(b) => Response {
+                    bytes: Some(b.to_vec()),
+                    status_code: 200,
+                },
+                ResponseContent::Create(f) => f(request),
+                ResponseContent::None => Response::new(None, 200),
+            };
         }
     }
     return Response::new(None, 404);
@@ -68,7 +89,7 @@ fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) {
 
     let first_line = content_read.lines().take(1).collect::<String>();
     let (verb, path) = match first_line.split(" ").collect::<Vec<_>>()[0..3] {
-        [verb, path, "HTTP/1.1"] => (verb, path),
+        [verb, path, _version] => (verb, path),
         _ => todo!(),
     };
 
@@ -95,7 +116,10 @@ fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) {
 
     let response = check_routes(routes, request);
 
-    stream.write_fmt(format_args!("HTTP/1.1 {} OK\r\n\r\n{}\r\n", response.status_code, response.content.unwrap_or("".to_string()))).expect("Failed to write to stream.");
+    stream.write_fmt(format_args!("HTTP/1.1 {} 200\r\n\r\n", response.status_code)).expect("Failed to write to stream.");
+
+    stream.write_all(&response.bytes.unwrap_or(vec![])).unwrap();
+    stream.write_all(b"\r\n").unwrap();
 
     stream.shutdown(std::net::Shutdown::Both).unwrap();
 }
