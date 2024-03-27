@@ -30,15 +30,16 @@ impl Response {
 pub struct Route {
     pub verb: HTTPVerb,
     pub path: String,
-    pub get_response: fn(Request) -> Response,
+    pub get_response: Box<dyn Fn(Request) -> Response>,
 }
 
 impl Route {
-    pub fn new(verb: HTTPVerb, path: String, get_response: fn(Request) -> Response) -> Route {
+    pub fn new<'a, T>(verb: HTTPVerb, path: String, get_response: T) -> Route
+    where T: Fn(Request) -> Response + 'static {
         Route {
             verb,
             path,
-            get_response,
+            get_response: Box::new(get_response),
         }
     }
 }

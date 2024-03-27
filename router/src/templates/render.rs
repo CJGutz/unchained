@@ -1,5 +1,3 @@
-use std::{io::{BufReader, Read, Error as IOError}, fs::File};
-
 use crate::error::{WebResult, Error};
 
 use super::{

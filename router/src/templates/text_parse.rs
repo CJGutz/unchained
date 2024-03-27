@@ -1,11 +1,14 @@
-use crate::error::WebResult;
-
 #[derive(Debug)]
 pub struct Match {
     pub from: usize,
     pub to: usize,
     pub content: String,
 }
+
+/// Not supporting graphemes of multiple code points 
+/// can lead to a significant performance improvement.
+/// This is due to slicing through `char_indices` being O(n) 
+const SUPPORT_UTF8: bool = false;
 
 trait FindGrapheme {
     fn find_grapheme(&self, grapheme: &str) -> Option<usize>;
@@ -55,6 +58,10 @@ pub fn len(s: &str) -> usize {
 }
 
 pub fn slice(s: &str, begin: usize, end: usize) -> &str {
+    if !SUPPORT_UTF8 {
+        return &s[begin..end];
+    }
+
     if end < begin {
         return "";
     }
@@ -73,19 +80,6 @@ pub fn slice(s: &str, begin: usize, end: usize) -> &str {
         })
         .unwrap_or("")
 }
-
-pub fn slice_utf8<'a>(content: &'a str, start: Option<usize>, end: Option<usize>) -> WebResult<&'a str> {
-    let mut chars = content.char_indices();
-    let start = start.map(|s| chars.nth(s).expect(&format!("Could not get the {s:?}th start element")).0);
-    let end = end.map(|e| chars.nth(e - start.unwrap_or(0)).expect(&format!("Could not get the {e:?}th end element. {chars:?}")).0);
-    Ok(match (start, end) {
-        (Some(start), Some(end)) => &content[start..end],
-        (Some(start), None) => &content[start..],
-        (None, Some(end)) => &content[..end],
-        (None, None) => content,
-    })
-}
-
 
 /// Finds the first match of from and to in the content.
 /// Example:
