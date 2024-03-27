@@ -3,7 +3,7 @@ use crate::error::{Error, WebResult};
 use super::{
     text_parse::{Match, between_connected_patterns}, 
     context::{ContextMap, ContextTree as Ctx, Primitive::*},
-    render::render_html
+    render::{render_html, template}
 };
 
 pub fn template_operation(content: &str) -> Option<Match> {
@@ -62,6 +62,7 @@ pub fn get_template_operation(op_name: &str) -> Option<TemplateOperation> {
     match op_name {
         "for" => Some(for_loop_operation),
         "if" => Some(if_operation),
+        "component" => Some(component_operation),
         _ => Some(get_attribute_from_context_operation),
     }
 }
@@ -146,3 +147,34 @@ fn for_loop_operation(call: TemplateOperationCall, context: &ContextMap) -> WebR
     Ok(iterated_content)
 }
 
+fn component_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
+    let parameters = call.parameters;
+    let file_path = parameters.get(0);
+    let file_path = match file_path {
+        Some(file_path) => file_path,
+        None => return Err(Error::InvalidParams("File path not specified".to_string()))
+    };
+    if !file_path.ends_with(".html") {
+        return Err(Error::InvalidParams("Invalid file path".to_string()));
+    }
+    let mut new_context = context.clone();
+    if parameters.len() > 1 {
+        new_context.clear(); 
+        parameters.iter().skip(1).map(|p| p.split("=").collect::<Vec<_>>()).for_each(|p| {
+            if p.len() != 2 {
+                return;
+            }
+            let item = get_attribute_from_context_operation(
+                TemplateOperationCall {
+                    parameters: vec![],
+                    name: p[1].to_string(),
+                    children: None,
+                } , &context).unwrap();
+            new_context.insert(p[0].to_string(), Ctx::Leaf(Str(item)));
+        });
+    }
+    
+    let rendered = template(file_path, Some(new_context))?;
+
+    Ok(rendered)
+}

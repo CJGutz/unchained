@@ -16,7 +16,7 @@ fn main() {
         Ctx::Leaf(Str("World".to_string())),
     ])));
     context.insert("title".to_string(), Ctx::Branch(Box::new(HashMap::from([
-        ("title".to_string(), Ctx::Leaf(Str(String::from("Søk til meg pls")))),
+        ("title".to_string(), Ctx::Leaf(Str(String::from("Soek til meg pls")))),
     ]))));
     let start = std::time::Instant::now();
     let template = template("gutz_html_ascii.html", Some(context));
