@@ -1,10 +1,10 @@
 use crate::error::{Error, WebResult};
 
 use super::{
-    text_parse::{Match, between_connected_patterns}, 
-    context::{ContextMap, ContextTree as Ctx, Primitive::*},
-    render::{render_html, template}
+    context::{ContextMap, ContextTree as Ctx, Primitive::*}, render::{render_html, template}, text_parse::{between_connected_patterns, Match}
 };
+
+const INSIDE_COMPONENT_OP_ID: &str = "inside_component_operation_identifier";
 
 pub fn template_operation(content: &str) -> Option<Match> {
     between_connected_patterns(content, "{*", "*}")
@@ -53,17 +53,18 @@ pub fn operation_params_and_children(operation: &str) -> Option<TemplateOperatio
 type TemplateOperation = fn(TemplateOperationCall, &ContextMap) -> WebResult<String>;
 /// Example template operation
 /// ```
-/// {{ if boolean {
+/// {* if boolean {
 ///  <div>Renders if true</div>
 /// }
-/// }}
+/// *}
 /// ```
 pub fn get_template_operation(op_name: &str) -> Option<TemplateOperation> {
     match op_name {
         "for" => Some(for_loop_operation),
         "if" => Some(if_operation),
         "component" => Some(component_operation),
-        _ => Some(get_attribute_from_context_operation),
+        "slot" => Some(slot),
+        _ => Some(attribute_operation),
     }
 }
 
@@ -78,9 +79,8 @@ fn unwrap_n_params<'a, const N: usize>(params: &'a Vec<String>) -> WebResult<[&'
     Ok(arr)
 }
 
-
-fn get_attribute_from_context_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
-    let splitted = call.name.split(".");
+fn attribute_from_context(attribute: &str, context: &ContextMap) -> WebResult<String> {
+    let splitted = attribute.split(".");
     let mut resulting_attribute = None;
     let mut new_context = context.clone();
     for attribute in splitted {
@@ -94,13 +94,18 @@ fn get_attribute_from_context_operation(call: TemplateOperationCall, context: &C
                 new_context = *b.clone();
                 continue;
             },
-            _ => return Err(Error::InvalidParams("Invalid".to_string())),
+            _ => return Err(Error::InvalidParams("No value found".to_string())),
         };
     }
     if resulting_attribute.is_none() {
         return Err(Error::InvalidParams("Invalid property access".to_string()));
     }
     Ok(resulting_attribute.unwrap())
+}
+
+
+fn attribute_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
+    attribute_from_context(&call.name, context)
 }
 
 
@@ -147,6 +152,31 @@ fn for_loop_operation(call: TemplateOperationCall, context: &ContextMap) -> WebR
     Ok(iterated_content)
 }
 
+/// Loads an html file to include in a template.
+/// Use slots to add html to specific parts of the template.
+/// If there are no slots, the component children, if any,
+/// will use the default slot. 
+///
+/// Context can be given to the component. If it is,
+/// other context data is removed.
+///
+/// TODO: Update the render method to insert own operations
+/// ```
+/// <!-- page.html -->
+/// {* component file.html data=object.attribute {
+///     {* slot default {
+///        <div>Default content</div>
+///     } *}
+///     {* slot something_else {
+///        <div>Default content</div>
+///     } *}
+/// } *}
+/// <!-- my_component.html -->
+/// <div>
+///     {* slot default *}
+/// </div>
+/// ```
+///
 fn component_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
     let parameters = call.parameters;
     let file_path = parameters.get(0);
@@ -164,17 +194,61 @@ fn component_operation(call: TemplateOperationCall, context: &ContextMap) -> Web
             if p.len() != 2 {
                 return;
             }
-            let item = get_attribute_from_context_operation(
-                TemplateOperationCall {
-                    parameters: vec![],
-                    name: p[1].to_string(),
-                    children: None,
-                } , &context).unwrap();
+            let item = attribute_from_context(p[1], context).unwrap();
             new_context.insert(p[0].to_string(), Ctx::Leaf(Str(item)));
         });
+    }
+
+    if let Some(children) = call.children {
+        new_context.insert(INSIDE_COMPONENT_OP_ID.to_string(), Ctx::Leaf(Bool(true)));
+        let mut content_w_slots = children.clone();
+        let mut slot_operations = 0;
+        while let Some(op) = template_operation(&content_w_slots) {
+            if let Some(operation_call) = operation_params_and_children(&op.content) {
+                if &operation_call.name == "slot" {
+                    let slot_name = unwrap_n_params::<1>(&operation_call.parameters)?[0];
+                    new_context.insert(slot_name.to_string(), Ctx::Slot(Str(operation_call.children.unwrap_or(String::new()))));
+                    slot_operations += 1;
+                }
+            }
+            content_w_slots.replace_range(op.from..op.to, "");
+        }
+        if slot_operations == 0 {
+            new_context.insert("default".to_string(), Ctx::Slot(Str(children.to_string())));
+        }
     }
     
     let rendered = template(file_path, Some(new_context))?;
 
     Ok(rendered)
+}
+
+/// Retrives html to include in context
+/// This slot operation is handled when rendering
+/// a component. A component operation includes the 
+/// slot html in the context. If a component excludes
+/// a slot. It renderes nothing.
+/// ```
+/// <!-- page.html -->
+/// {* component file.html {
+///     {* slot default {
+///        <div>Default content</div>
+///     } *}
+///     {* slot something_else {
+///        <div>Default content</div>
+///     } *}
+/// } *}
+/// <!-- my_component.html -->
+/// <div>
+///     {* slot default *}
+/// </div>
+/// ```
+///
+fn slot(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
+    let slot_name = unwrap_n_params::<1>(&call.parameters)?[0];
+    let content_to_include = match context.get(slot_name) {
+        Some(Ctx::Slot(a)) => a.to_string(),
+        _ => String::new(),
+    };
+    return Ok(content_to_include);
 }

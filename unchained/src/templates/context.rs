@@ -12,7 +12,8 @@ pub enum Primitive {
 pub enum ContextTree {
     Leaf(Primitive),
     Array(Box<Vec<ContextTree>>),
-    Branch(Box<HashMap<String, ContextTree>>)
+    Branch(Box<HashMap<String, ContextTree>>),
+    Slot(Primitive),
 }
 
 pub type ContextMap = HashMap<String, ContextTree>;
@@ -34,3 +35,12 @@ impl ContextTree {
     }
 }
 
+impl ToString for Primitive {
+    fn to_string(&self) -> String {
+        match self {
+            Primitive::Str(a) => a.to_string(),
+            Primitive::Num(a) => a.to_string(),
+            Primitive::Bool(a) => a.to_string()
+        }
+    }
+}

@@ -116,7 +116,7 @@ fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) {
 
     let response = check_routes(routes, request);
 
-    stream.write_fmt(format_args!("HTTP/1.1 {} 200\r\n\r\n", response.status_code)).expect("Failed to write to stream.");
+    stream.write_fmt(format_args!("HTTP/1.1 {} \r\n\r\n", response.status_code)).expect("Failed to write to stream.");
 
     stream.write_all(&response.bytes.unwrap_or(vec![])).unwrap();
     stream.write_all(b"\r\n").unwrap();

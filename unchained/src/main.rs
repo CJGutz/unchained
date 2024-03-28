@@ -18,6 +18,14 @@ fn main() {
     context.insert("title".to_string(), Ctx::Branch(Box::new(HashMap::from([
         ("title".to_string(), Ctx::Leaf(Str(String::from("Soek til meg pls")))),
     ]))));
+
+    context.insert("front_links".to_string(), Ctx::Array(Box::new(vec![
+        Ctx::Branch(Box::new(HashMap::from([("href".to_string(), Ctx::Leaf(Str("/#about".to_string()))), ("label".to_string(), Ctx::Leaf(Str("About me".to_string())))]))),
+        Ctx::Branch(Box::new(HashMap::from([("href".to_string(), Ctx::Leaf(Str("/experience".to_string()))), ("label".to_string(), Ctx::Leaf(Str("Experience".to_string())))]))),
+        Ctx::Branch(Box::new(HashMap::from([("href".to_string(), Ctx::Leaf(Str("/skills".to_string()))), ("label".to_string(), Ctx::Leaf(Str("Skills".to_string())))]))),
+    ])));
+
+
     let start = std::time::Instant::now();
     let template = template("gutz_html_ascii.html", Some(context));
     let duration = start.elapsed();
