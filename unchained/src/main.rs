@@ -1,29 +1,27 @@
 use std::collections::HashMap;
 
 use unchained::{
-    router::{start_server, ServerOptions, Route, HTTPVerb::*, Response, ResponseContent},
-    templates::{
-        render::template,
-        context::{ContextTree as Ctx, Primitive::*},
-    }, error::Error
+    error::Error, router::{start_server, HTTPVerb::*, Response, ResponseContent, Route, ServerOptions}, templates::{
+        context::{ctx_map, ctx_str, ctx_vec}, render::template
+    }
 };
 
 fn main() {
 
     let mut context = HashMap::new();
-    context.insert("list".to_string(), Ctx::Array(Box::new(vec![
-        Ctx::Leaf(Str("Hello".to_string())),
-        Ctx::Leaf(Str("World".to_string())),
-    ])));
-    context.insert("title".to_string(), Ctx::Branch(Box::new(HashMap::from([
-        ("title".to_string(), Ctx::Leaf(Str(String::from("Soek til meg pls")))),
-    ]))));
+    context.insert("list".to_string(), ctx_vec(vec![
+        ctx_str("Hello"),
+        ctx_str("World"),
+    ]));
+    context.insert("title".to_string(), ctx_map([
+        ("title", ctx_str("Soek til meg pls")),
+    ]));
 
-    context.insert("front_links".to_string(), Ctx::Array(Box::new(vec![
-        Ctx::Branch(Box::new(HashMap::from([("href".to_string(), Ctx::Leaf(Str("/#about".to_string()))), ("label".to_string(), Ctx::Leaf(Str("About me".to_string())))]))),
-        Ctx::Branch(Box::new(HashMap::from([("href".to_string(), Ctx::Leaf(Str("/experience".to_string()))), ("label".to_string(), Ctx::Leaf(Str("Experience".to_string())))]))),
-        Ctx::Branch(Box::new(HashMap::from([("href".to_string(), Ctx::Leaf(Str("/skills".to_string()))), ("label".to_string(), Ctx::Leaf(Str("Skills".to_string())))]))),
-    ])));
+    context.insert("front_links".to_string(), ctx_vec(vec![
+        ctx_map([("href", ctx_str("/#about")), ("label", ctx_str("About me"))]),
+        ctx_map([("href", ctx_str("/experience")), ("label", ctx_str("Experience"))]),
+        ctx_map([("href", ctx_str("/skills")), ("label", ctx_str("Skills"))]),
+    ]));
 
 
     let start = std::time::Instant::now();

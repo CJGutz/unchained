@@ -44,3 +44,20 @@ impl ToString for Primitive {
         }
     }
 }
+
+pub fn ctx_vec(parameters: Vec<ContextTree>) -> ContextTree {
+    ContextTree::Array(Box::new(parameters))
+}
+
+pub fn ctx_map<const N: usize>(array: [(&str, ContextTree); N]) -> ContextTree {
+    let mut string_array: Vec<(String, ContextTree)> = Vec::with_capacity(N);
+    for (s, c) in array.iter() {
+        string_array.push((s.to_string(), c.clone()));
+    }
+    let map: HashMap<String, ContextTree> = array.iter().map(|(s, c)| (s.to_string(), c.clone())).collect();
+    ContextTree::Branch(Box::new(map))
+}
+
+pub fn ctx_str(str: &str) -> ContextTree {
+    ContextTree::Leaf(Primitive::Str(str.to_string()))
+}
