@@ -1,5 +1,5 @@
 # Unchained
-## template renderer and router
+*Template renderer and router*
 
 > Created during the evenings of easter holiday
 
@@ -29,4 +29,23 @@ fn main() {
     ];
     start_server(routes, ServerOptions {address: None});
 }
+```
+
+```html
+<!-- templates/landing-page.html -->
+{* component templates/base.html {
+    <div class="grid grid-cols-2 gap-4 m-5">
+        {* for button in page_links {
+            {* component templates/front-button.html label=button.label link=button.href *}
+        } *}
+    </div>
+    <div class="w-full mt-96 sm-p-10 p-4">
+        <h1 id="about" class="text-4xl font-bold">About me</h1>
+        <div class="p-10 flex flex-row gap-x-3 overflow-x-scroll snap-x snap-mandatory">
+            {* for image in images {
+                <img alt="{* image.alt *}"  src="/images/{* image.path *}" width="500" height="500">
+             } *}
+        </div>
+    </div>
+} *}
 ```
