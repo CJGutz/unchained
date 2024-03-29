@@ -1,0 +1,91 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Carl Johan Gutzkow | Portfolio</title>
+    {* component templates/tailwind.html *}
+    <noscript data-n-css=""></noscript>
+    <style>
+      @tailwind base;
+      @tailwind components;
+      @tailwind utilities;
+
+      div {
+        align-items: center;
+      }
+
+      @font-face {
+        font-family: 'Poppins';
+        src: local('Poppins'), url('/Poppins/Poppins-Regular.ttf') format('truetype');
+      }
+
+      @layer base {
+        html {
+          font-family: Poppins, system-ui;
+        }
+      }
+
+      a,
+      button {
+        transition: all 300ms ease-in-out;
+      }
+
+      a:hover,
+      button:hover {
+        cursor: pointer;
+        opacity: 0.8;
+      }
+
+      @layer components {
+        .mvn-button {
+          @apply transition ease-in duration-200 transform hover:-translate-y-1 active:translate-y-0;
+        }
+      }
+
+      * {
+        word-break: break-word;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="__next">
+      <div class="flex flex-col overflow-hidden justify-between items-stretch min-h-screen bg-gradient-radial from-light-red to-light-blue">
+        <header class="bg-transparent z-30">
+          <nav class="container mx-auto p-6 lg:flex lg:items-center lg:justify-between">
+            <div class="flex items-center justify-between">
+              <div class="z-20"><a class="text-2xl font-bold text-gray-800 hover:text-gray-700 lg:text-3xl" href="/">Carl Gutzkow</a></div>
+              <div class="flex lg:hidden">
+                <button class="text-gray-500 hover:text-gray-600 z-30" aria-label="toggle menu">
+                  <img alt="Hamburger Menu" srcset="/_next/static/media/hamburger.b0c017b4.svg 1x, /_next/static/media/hamburger.b0c017b4.svg 2x" src="/_next/static/media/hamburger.b0c017b4.svg" width="24" height="24" decoding="async" data-nimg="1" loading="lazy" style="color:transparent"></button>
+              </div>
+            </div>
+            <div class="opacity-0 -translate-y-full h-0 inset-x-0 w-full bg-transparent px-6 py-4 shadow-md transition-all duration-200 ease-in-out lg:relative lg:top-0 lg:mt-0 lg:flex lg:w-auto lg:translate-y-0 lg:items-center lg:bg-transparent lg:p-0 lg:opacity-100 lg:shadow-none">
+              <div class="flex flex-col space-y-4 lg:mt-0 lg:flex-row lg:space-y-0">
+                <a class="text-sm font-medium text-gray-700 hover:text-blue-500 lg:mx-4 lg:mvn-button" href="/#about">About me</a>
+                <a class="text-sm font-medium text-gray-700 hover:text-blue-500 lg:mx-4 lg:mvn-button" href="/skills">Skills</a>
+                <a class="text-sm font-medium text-gray-700 hover:text-blue-500 lg:mx-4 lg:mvn-button" href="/experience">Experience</a>
+              </div>
+            </div>
+          </nav>
+        </header>
+        <main class="container relative">
+          {* slot default *}
+        </main>
+        <footer class="p-4 z-10 md:flex md:items-center md:justify-around md:p-6 bg-off-white shadow-[0px_0px_10px_2px_rgba(0,0,0,0.3)]">
+          <span class="text-sm text-gray-500 sm:text-center">
+            c <!-- -->2024<!-- --> <a class="underline" target="_blank" href="https://github.com/cjgutz">Carl Gutzkow</a>
+          </span>
+          <ul class="flex flex-wrap items-center mt-3 md:mt-0">
+            <li class="mvn-button"><a class="mr-4 text-sm text-gray-500 hover:text-blue-500 md:mr-6" href="/#about">About me</a></li>
+            <li class="mvn-button"><a class="mr-4 text-sm text-gray-500 hover:text-blue-500 md:mr-6" href="/skills">Skills</a></li>
+            <li class="mvn-button"><a class="mr-4 text-sm text-gray-500 hover:text-blue-500 md:mr-6" href="/experience">Experience</a></li>
+          </ul>
+        </footer>
+      </div>
+    </div>
+  </body>
+</html>
