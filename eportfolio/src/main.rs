@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use unchained::{
-    error::Error, router::{start_server, HTTPVerb::*, Response, ResponseContent, Route, ServerOptions}, templates::{
+    error::Error, router::{start_server, HTTPVerb::*, ResponseContent, Route, ServerOptions}, templates::{
         context::{ctx_map, ctx_str, ctx_vec}, render::template
     }
 };
@@ -33,17 +33,17 @@ fn main() {
     println!("Finished rendering after {} s", duration.as_secs_f64());
 
     let routes = vec![
-        Route::new(GET, String::from("/"), ResponseContent::Create(Box::new(move |_req| {
-            return match &template {
-                Ok(template) => Response::new_200(template.to_string()),
+        Route::new(GET, "/", ResponseContent::Str(
+            match &template {
+                Ok(template) => template.to_string(),
                 Err(e) => panic!("Error: {}", match e {
                     Error::InvalidParams(s) => s.to_string(),
                     Error::ParseTemplate => "What tha hell".to_string(),
                     _ => "Unknown error".to_string(),
                 }),
-            };
-        }))),
-        Route::new(GET, String::from("/images/*"), ResponseContent::None)
+            
+        })),
+        Route::new(GET, "/images/*", ResponseContent::FolderAccess)
     ];
     start_server(routes, ServerOptions {address: None});
 }

@@ -30,8 +30,8 @@ impl Response {
 pub enum ResponseContent {
     Str(String),
     Bytes(Vec<u8>),
-    Create(Box<dyn Fn(Request) -> Response>),
-    None,
+    FromRequest(Box<dyn Fn(Request) -> Response>),
+    FolderAccess,
 }
 
 pub struct Route {
@@ -41,10 +41,10 @@ pub struct Route {
 }
 
 impl Route {
-    pub fn new(verb: HTTPVerb, path: String, response: ResponseContent) -> Route {
+    pub fn new(verb: HTTPVerb, path: &str, response: ResponseContent) -> Route {
         Route {
             verb,
-            path,
+            path: path.to_string(),
             response
         }
     }
@@ -59,22 +59,28 @@ fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
             HTTPVerb::DELETE => "DELETE",
             HTTPVerb::HEAD => "HEAD",
         };
-        if route.path.ends_with("*") && request.path.contains(route.path.trim_end_matches("*")) {
-            let buf = PathBuf::from(&request.path.trim_start_matches("/"));
+        let route_path = route.path.trim_end_matches("/").trim_end_matches("*").trim_start_matches("/");
+        let req_path = request.path.trim_end_matches("/").trim_start_matches("/");
+
+        if route.path.ends_with("*") 
+            && req_path.starts_with(route_path)
+            && matches!(route.response, ResponseContent::FolderAccess) 
+        {
+            let buf = PathBuf::from(req_path);
             let file = std::fs::read(buf).ok();
             return Response {
                 bytes: file.clone(),
                 status_code: if file.is_some() { 200 } else { 404 },
             };
-        } else if route_verb == request.verb && route.path.trim_end_matches("/") == request.path.trim_end_matches("/") {
-            return match &route.response {
-                ResponseContent::Str(s) => Response::new_200(s.to_string()),
-                ResponseContent::Bytes(b) => Response {
+        } else if route_verb == request.verb && route_path == req_path {
+            match &route.response {
+                ResponseContent::Str(s) => return Response::new_200(s.to_string()),
+                ResponseContent::Bytes(b) => return Response {
                     bytes: Some(b.to_vec()),
                     status_code: 200,
                 },
-                ResponseContent::Create(f) => f(request),
-                ResponseContent::None => Response::new(None, 200),
+                ResponseContent::FromRequest(f) => return f(request),
+                ResponseContent::FolderAccess => (),
             };
         }
     }
