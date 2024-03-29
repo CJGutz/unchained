@@ -65,9 +65,9 @@
             </div>
             <div class="opacity-0 -translate-y-full h-0 inset-x-0 w-full bg-transparent px-6 py-4 shadow-md transition-all duration-200 ease-in-out lg:relative lg:top-0 lg:mt-0 lg:flex lg:w-auto lg:translate-y-0 lg:items-center lg:bg-transparent lg:p-0 lg:opacity-100 lg:shadow-none">
               <div class="flex flex-col space-y-4 lg:mt-0 lg:flex-row lg:space-y-0">
-                <a class="text-sm font-medium text-gray-700 hover:text-blue-500 lg:mx-4 lg:mvn-button" href="/#about">About me</a>
-                <a class="text-sm font-medium text-gray-700 hover:text-blue-500 lg:mx-4 lg:mvn-button" href="/skills">Skills</a>
-                <a class="text-sm font-medium text-gray-700 hover:text-blue-500 lg:mx-4 lg:mvn-button" href="/experience">Experience</a>
+                {* for link in page_links {
+                  <a class="text-sm font-medium text-gray-700 hover:text-blue-500 lg:mx-4 lg:mvn-button" href="{* link.href *}">{* link.label *}</a>
+                } *}
               </div>
             </div>
           </nav>
@@ -80,9 +80,9 @@
             c <!-- -->2024<!-- --> <a class="underline" target="_blank" href="https://github.com/cjgutz">Carl Gutzkow</a>
           </span>
           <ul class="flex flex-wrap items-center mt-3 md:mt-0">
-            <li class="mvn-button"><a class="mr-4 text-sm text-gray-500 hover:text-blue-500 md:mr-6" href="/#about">About me</a></li>
-            <li class="mvn-button"><a class="mr-4 text-sm text-gray-500 hover:text-blue-500 md:mr-6" href="/skills">Skills</a></li>
-            <li class="mvn-button"><a class="mr-4 text-sm text-gray-500 hover:text-blue-500 md:mr-6" href="/experience">Experience</a></li>
+            {* for link in page_links {
+            <li class="mvn-button"><a class="mr-4 text-sm text-gray-500 hover:text-blue-500 md:mr-6" href="{* link.href *}">{* link.label *}</a></li>
+            } *}
           </ul>
         </footer>
       </div>

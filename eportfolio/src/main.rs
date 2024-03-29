@@ -10,7 +10,7 @@ fn main() {
 
     let mut context = HashMap::new();
 
-    context.insert("front_links".to_string(), ctx_vec(vec![
+    context.insert("page_links".to_string(), ctx_vec(vec![
         ctx_map([("href", ctx_str("/#about")), ("label", ctx_str("About me"))]),
         ctx_map([("href", ctx_str("/experience")), ("label", ctx_str("Experience"))]),
         ctx_map([("href", ctx_str("/skills")), ("label", ctx_str("Skills"))]),
