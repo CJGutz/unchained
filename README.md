@@ -54,3 +54,12 @@ fn main() {
     </div>
 } *}
 ```
+
+### Grammar
+
+op_name: "for" | "if" | "component" | "slot" ... \
+parameters: (\w+\s\*)+ \
+html: !( template_operation ) \
+children: "{" html "}" \
+context_access: "{{" .\* "}}" <!-- Perhaps something to change to --> \
+template_operation: "{\*" op_name parameters? children? "\*}"  | context_access
