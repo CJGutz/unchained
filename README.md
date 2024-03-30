@@ -1,7 +1,12 @@
 # Unchained
 *Template renderer and router*
 
-> Created during the evenings of easter holiday
+> Created during the evenings of Easter holiday
+
+
+- Easy to use
+- Easy to extend (soon)
+- No extra dependencies
 
 ### Examples
 
@@ -41,7 +46,7 @@ fn main() {
     </div>
     <div class="w-full mt-96 sm-p-10 p-4">
         <h1 id="about" class="text-4xl font-bold">About me</h1>
-        <div class="p-10 flex flex-row gap-x-3 overflow-x-scroll snap-x snap-mandatory">
+        <div class="p-10 flex flex-row gap-3 overflow-x-scroll">
             {* for image in images {
                 <img alt="{* image.alt *}"  src="/images/{* image.path *}" width="500" height="500">
              } *}
