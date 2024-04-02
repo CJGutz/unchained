@@ -47,7 +47,7 @@ fn chars_equal_for_length(
     let mut zipped = iter.zip(to_match);
     let mut index = 0;
     while let Some(ch) = zipped.next() {
-        index += 1;
+        index += ch.0.len_utf8();
         if ch.0 != ch.1 {
             return (false, index);
         }
@@ -63,6 +63,7 @@ pub fn between_connected_patterns(
     if opening_pattern == closing_pattern {
         return find_between(content, opening_pattern, closing_pattern);
     }
+
 
     let mut open_parens = 0;
     let mut first_index: Option<usize> = None;
@@ -105,19 +106,20 @@ pub fn between_connected_patterns(
                     open_parens -= 1;
                     if open_parens == 0 {
                         let first_index = first_index.unwrap();
-                        return Some(Match {
+                        let m = Some(Match {
                             from: first_index,
                             to: index,
                             content: content[first_index + opening_pattern.len()
                                 ..index - closing_pattern.len() + 1]
                                 .to_string(),
                         });
+                        return m;
                     }
                 }
             }
             _ => {}
         }
-        index += 1;
+        index += ch.len_utf8();
     }
 
     None
@@ -135,11 +137,7 @@ pub fn between_connected_patterns(
 /// assert_eq!(inside_pattern, "a pattern".to_string());
 /// ```
 pub fn remove_between(content: &str, from: &str, to: &str) -> Option<(String, String)> {
-    let find = find_between(content, from, to);
-    if find.is_none() {
-        return None;
-    }
-    let find = find.unwrap();
+    let find = find_between(content, from, to)?;
 
     let mut content = content.to_string();
     content.replace_range(find.from..find.to + 1, "");
@@ -281,6 +279,38 @@ mod tests {
         assert_eq!(res.from, 30);
         assert_eq!(res.to, 57);
     }
+
+    #[test]
+    fn test_with_html_content_operation() {
+        let content = r#"{* component me.html {
+            <div class="my-class">
+                <h1>{{ Me }}</h1>
+                <p>{* Some text about me *}</p>
+            </div>
+        } *}"#;
+        let res = between_connected_patterns(content, "{*", "*}");
+        assert!(res.is_some());
+        let res = res.unwrap();
+        assert_eq!(res.from, 0);
+        assert_eq!(res.to, 170);
+    }
+
+
+    #[test]
+    fn test_with_html_content_operation() {
+        let content = r#"{* component me.html {
+            <div class="my-class">
+                <h1>{{ Me }}</h1>
+                <p>{* Some text about me *}</p>
+            </div>
+        } *}"#;
+        let res = between_connected_patterns(content, "{*", "*}");
+        assert!(res.is_some());
+        let res = res.unwrap();
+        assert_eq!(res.from, 0);
+        assert_eq!(res.to, 170);
+    }
+
     #[test]
     fn test_equal_open_and_closing_pattern() {
         let content = "content | with a pattern and | another pattern |";

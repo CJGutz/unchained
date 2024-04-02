@@ -98,7 +98,7 @@ fn attribute_from_context(attribute: &str, context: &ContextMap) -> WebResult<St
                 new_context = *b.clone();
                 continue;
             }
-            _ => return Err(Error::InvalidParams("No value found".to_string())),
+            _ => return Err(Error::InvalidParams(format!("Invalid attribute: {} not found in context", attribute))),
         };
     }
     if resulting_attribute.is_none() {
@@ -202,8 +202,8 @@ fn component_operation(call: TemplateOperationCall, context: &ContextMap) -> Web
                 if p.len() != 2 {
                     return;
                 }
-                let item = attribute_from_context(p[1], context).unwrap();
-                new_context.insert(p[0].to_string(), Ctx::Leaf(Str(item)));
+                let item = attribute_from_context(p[1], context);
+                new_context.insert(p[0].to_string(), Ctx::Leaf(Str(item.unwrap())));
             });
     }
 
@@ -257,6 +257,13 @@ fn component_operation(call: TemplateOperationCall, context: &ContextMap) -> Web
 ///
 fn slot(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
     let slot_name = unwrap_n_params::<1>(&call.parameters)?[0];
+    if let Some(Ctx::Leaf(Bool(inside_component))) = context.get(INSIDE_COMPONENT_OP_ID) {
+        if !inside_component {
+            return Err(Error::InvalidParams(
+                "Slot function is not loaded from component".to_string())
+            );
+        }
+    }
     let content_to_include = match context.get(slot_name) {
         Some(Ctx::Slot(a)) => a.to_string(),
         _ => String::new(),
