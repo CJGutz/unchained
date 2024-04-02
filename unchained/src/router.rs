@@ -66,12 +66,12 @@ fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
         };
         let route_path = route
             .path
-            .trim_end_matches("/")
-            .trim_end_matches("*")
-            .trim_start_matches("/");
-        let req_path = request.path.trim_end_matches("/").trim_start_matches("/");
+            .trim_end_matches('/')
+            .trim_end_matches('*')
+            .trim_start_matches('/');
+        let req_path = request.path.trim_end_matches('/').trim_start_matches('/');
 
-        if route.path.ends_with("*")
+        if route.path.ends_with('*')
             && req_path.starts_with(route_path)
             && matches!(route.response, ResponseContent::FolderAccess)
         {
@@ -95,7 +95,7 @@ fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
             };
         }
     }
-    return Response::new(None, 404);
+    Response::new(None, 404)
 }
 
 fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) {
@@ -104,7 +104,7 @@ fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) {
     buf_read.read_line(&mut content_read).unwrap();
 
     let first_line = content_read.lines().take(1).collect::<String>();
-    let (verb, path) = match first_line.split(" ").collect::<Vec<_>>()[0..3] {
+    let (verb, path) = match first_line.split(' ').collect::<Vec<_>>()[0..3] {
         [verb, path, _version] => (verb, path),
         _ => todo!(),
     };

@@ -20,16 +20,16 @@ pub struct TemplateOperationCall {
 }
 
 fn childless_templ_op_call(op_content: &str) -> Option<TemplateOperationCall> {
-    let splitted = op_content.trim().split(" ").map(|s| s.to_string());
+    let splitted = op_content.trim().split(' ').map(|s| s.to_string());
     let name = splitted.clone().take(1).collect::<String>();
     if name.is_empty() {
         return None;
     }
-    return Some(TemplateOperationCall {
+    Some(TemplateOperationCall {
         name,
         parameters: splitted.skip(1).collect::<Vec<String>>(),
         children: None,
-    });
+    })
 }
 
 pub fn operation_params_and_children(operation: &str) -> Option<TemplateOperationCall> {
@@ -48,7 +48,7 @@ pub fn operation_params_and_children(operation: &str) -> Option<TemplateOperatio
             }
         };
     }
-    return childless_templ_op_call(operation);
+    childless_templ_op_call(operation)
 }
 
 type TemplateOperation = fn(TemplateOperationCall, &ContextMap) -> WebResult<String>;
@@ -69,7 +69,7 @@ pub fn get_template_operation(op_name: &str) -> Option<TemplateOperation> {
     }
 }
 
-fn unwrap_n_params<'a, const N: usize>(params: &'a Vec<String>) -> WebResult<[&'a str; N]> {
+fn unwrap_n_params<const N: usize>(params: &Vec<String>) -> WebResult<[&str; N]> {
     let mut arr = [""; N];
     if params.len() != N {
         return Err(Error::InvalidParams(format!(
@@ -84,7 +84,7 @@ fn unwrap_n_params<'a, const N: usize>(params: &'a Vec<String>) -> WebResult<[&'
 }
 
 fn attribute_from_context(attribute: &str, context: &ContextMap) -> WebResult<String> {
-    let splitted = attribute.split(".");
+    let splitted = attribute.split('.');
     let mut resulting_attribute = None;
     let mut new_context = context.clone();
     for attribute in splitted {
@@ -197,7 +197,7 @@ fn component_operation(call: TemplateOperationCall, context: &ContextMap) -> Web
         parameters
             .iter()
             .skip(1)
-            .map(|p| p.split("=").collect::<Vec<_>>())
+            .map(|p| p.split('=').collect::<Vec<_>>())
             .for_each(|p| {
                 if p.len() != 2 {
                     return;
@@ -268,5 +268,5 @@ fn slot(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> 
         Some(Ctx::Slot(a)) => a.to_string(),
         _ => String::new(),
     };
-    return Ok(content_to_include);
+    Ok(content_to_include)
 }

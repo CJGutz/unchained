@@ -44,15 +44,15 @@ fn chars_equal_for_length(
     iter: &mut dyn Iterator<Item = char>,
     to_match: &mut dyn Iterator<Item = char>,
 ) -> (bool, usize) {
-    let mut zipped = iter.zip(to_match);
+    let zipped = iter.zip(to_match);
     let mut index = 0;
-    while let Some(ch) = zipped.next() {
+    for ch in zipped {
         index += ch.0.len_utf8();
         if ch.0 != ch.1 {
             return (false, index);
         }
     }
-    return (true, index);
+    (true, index)
 }
 
 pub fn between_connected_patterns(
@@ -141,7 +141,7 @@ pub fn remove_between(content: &str, from: &str, to: &str) -> Option<(String, St
 
     let mut content = content.to_string();
     content.replace_range(find.from..find.to + 1, "");
-    return Some((content, find.content));
+    Some((content, find.content))
 }
 
 #[cfg(test)]

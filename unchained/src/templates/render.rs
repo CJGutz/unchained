@@ -17,11 +17,8 @@ pub fn render_html(mut content: String, context: Option<ContextMap>) -> WebResul
         let result = result.unwrap();
         if let Some(op_call) = operation_params_and_children(&result.content) {
             if let Some(operation) = get_template_operation(&op_call.name) {
-                let replacement = operation(op_call, context);
-                if replacement.is_err() {
-                    return Err(replacement.unwrap_err());
-                }
-                content.replace_range(result.from..result.to + 1, &replacement.unwrap())
+                let replacement = operation(op_call, context)?;
+                content.replace_range(result.from..result.to + 1, &replacement)
             } else {
                 return Err(Error::ParseTemplate);
             }
@@ -29,7 +26,7 @@ pub fn render_html(mut content: String, context: Option<ContextMap>) -> WebResul
             return Err(Error::ParseTemplate);
         }
     }
-    return Ok(content);
+    Ok(content)
 }
 
 /// Render an html file
