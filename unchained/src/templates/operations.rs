@@ -1,7 +1,7 @@
 use crate::error::{Error, WebResult};
 
 use super::{
-    context::{ContextMap, ContextTree as Ctx, Primitive::*},
+    context::{ctx_str, ContextMap, ContextTree as Ctx, Primitive::*},
     render::{render_html, template},
     text_parse::{between_connected_patterns, Match},
 };
@@ -98,7 +98,12 @@ fn attribute_from_context(attribute: &str, context: &ContextMap) -> WebResult<St
                 new_context = *b.clone();
                 continue;
             }
-            _ => return Err(Error::InvalidParams(format!("Invalid attribute: {} not found in context", attribute))),
+            _ => {
+                return Err(Error::InvalidParams(format!(
+                    "Invalid attribute: {} not found in context",
+                    attribute
+                )))
+            }
         };
     }
     if resulting_attribute.is_none() {
@@ -112,36 +117,61 @@ fn attribute_operation(call: TemplateOperationCall, context: &ContextMap) -> Web
 }
 
 fn if_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
-    if let Ok([first_param]) = unwrap_n_params::<1>(&call.parameters) {
-        let display_content = match first_param {
-            "true" => true,
-            "false" => false,
-            _ => match context.get(first_param) {
-                Some(Ctx::Leaf(Bool(bool))) => *bool,
-                _ => return Err(Error::InvalidParams("Invalid".to_string())),
-            },
-        };
-        if display_content {
-            return Ok(call.children.unwrap_or(String::new()));
-        }
-        return Ok(String::new());
+    let first_param = unwrap_n_params::<1>(&call.parameters)?[0];
+    let display_content = match first_param {
+        "true" => true,
+        "false" => false,
+        _ => match context.get(first_param) {
+            Some(Ctx::Leaf(Bool(bool))) => *bool,
+            res => {
+                return Err(Error::InvalidParams(format!(
+                    "Expected value resolve to boolean, but found {:?}",
+                    res.unwrap_or(&ctx_str(&format!(
+                        "(no value for '{}' in context)",
+                        first_param
+                    )))
+                )))
+            }
+        },
+    };
+    if display_content {
+        return Ok(call.children.unwrap_or(String::new()));
     }
-    Err(Error::InvalidParams("Invalid".to_string()))
+    Ok(String::new())
 }
 
 fn for_loop_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
-    let param_slice = unwrap_n_params::<3>(&call.parameters);
+    let param_slice = unwrap_n_params::<3>(&call.parameters)?;
     let (element, range_key) = match param_slice {
-        Ok([element, "in", range]) => (element, range),
-        _ => return Err(Error::InvalidParams("Invalid param slice".to_string())),
+        [element, "in", range] => (element, range),
+        _ => {
+            return Err(Error::InvalidParams(format!(
+                "Expected 'for element in range', but got '{:?}'",
+                param_slice
+            )))
+        }
     };
     let range = match context.get(range_key) {
         Some(Ctx::Array(arr)) => arr,
-        _ => return Err(Error::InvalidParams("Invalid range".to_string())),
+        None => {
+            return Err(Error::InvalidParams(format!(
+                "Found no context value for {range_key}"
+            )))
+        }
+        Some(res) => {
+            return Err(Error::InvalidParams(format!(
+                "Range has to be a context array. Got {:?}",
+                res
+            )))
+        }
     };
     let children = match call.children {
         Some(children) => children,
-        None => return Err(Error::InvalidParams("Invalid children".to_string())),
+        None => {
+            return Err(Error::InvalidParams(
+                "A for loop needs to have children to iterate.".to_string(),
+            ))
+        }
     };
     let mut new_context = context.clone();
     let mut iterated_content = String::new();
@@ -260,8 +290,8 @@ fn slot(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> 
     if let Some(Ctx::Leaf(Bool(inside_component))) = context.get(INSIDE_COMPONENT_OP_ID) {
         if !inside_component {
             return Err(Error::InvalidParams(
-                "Slot function is not loaded from component".to_string())
-            );
+                "Slot function is not loaded from component".to_string(),
+            ));
         }
     }
     let content_to_include = match context.get(slot_name) {

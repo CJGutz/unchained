@@ -70,14 +70,11 @@ fn main() {
             "/",
             ResponseContent::Str(match &template {
                 Ok(template) => template.to_string(),
-                Err(e) => panic!(
-                    "Error: {}",
-                    match e {
-                        Error::InvalidParams(s) => s.to_string(),
-                        Error::ParseTemplate => "What tha hell".to_string(),
-                        _ => "Unknown error".to_string(),
-                    }
-                ),
+                Err(e) => match e {
+                    Error::InvalidParams(s) => s.to_string(),
+                    Error::LoadFile(s) => s.to_string(),
+                    Error::ParseTemplate(s) => s.to_string(),
+                },
             }),
         ),
         Route::new(GET, "/images/*", ResponseContent::FolderAccess),

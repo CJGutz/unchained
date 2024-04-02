@@ -1,7 +1,7 @@
 #[derive(Debug)]
 pub enum Error {
-    ParseTemplate,
-    LoadFile,
+    ParseTemplate(String),
+    LoadFile(String),
     InvalidParams(String),
 }
 

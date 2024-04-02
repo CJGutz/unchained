@@ -64,7 +64,6 @@ pub fn between_connected_patterns(
         return find_between(content, opening_pattern, closing_pattern);
     }
 
-
     let mut open_parens = 0;
     let mut first_index: Option<usize> = None;
     let mut index = 0;
@@ -294,7 +293,6 @@ mod tests {
         assert_eq!(res.from, 0);
         assert_eq!(res.to, 170);
     }
-
 
     #[test]
     fn test_with_html_content_operation() {

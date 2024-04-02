@@ -5,7 +5,6 @@ use super::{
     operations::{get_template_operation, operation_params_and_children, template_operation},
 };
 
-
 pub fn render_html(mut content: String, context: Option<ContextMap>) -> WebResult<String> {
     let context = &context.unwrap_or_default();
 
@@ -20,10 +19,15 @@ pub fn render_html(mut content: String, context: Option<ContextMap>) -> WebResul
                 let replacement = operation(op_call, context)?;
                 content.replace_range(result.from..result.to + 1, &replacement)
             } else {
-                return Err(Error::ParseTemplate);
+                return Err(Error::ParseTemplate(format!(
+                    "No template operation specified for {}",
+                    op_call.name
+                )));
             }
         } else {
-            return Err(Error::ParseTemplate);
+            return Err(Error::ParseTemplate(
+                "Could not create operation from content".to_string(),
+            ));
         }
     }
     Ok(content)
@@ -35,7 +39,7 @@ pub fn render_html(mut content: String, context: Option<ContextMap>) -> WebResul
 pub fn template(path: &str, context: Option<ContextMap>) -> WebResult<String> {
     let content = std::fs::read_to_string(path);
     if content.is_err() {
-        return Err(Error::LoadFile);
+        return Err(Error::LoadFile(format!("Could not read file {}", path)));
     }
 
     render_html(content.unwrap(), context)
