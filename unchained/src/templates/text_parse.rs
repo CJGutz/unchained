@@ -294,20 +294,6 @@ mod tests {
         assert_eq!(res.to, 170);
     }
 
-    #[test]
-    fn test_with_html_content_operation() {
-        let content = r#"{* component me.html {
-            <div class="my-class">
-                <h1>{{ Me }}</h1>
-                <p>{* Some text about me *}</p>
-            </div>
-        } *}"#;
-        let res = between_connected_patterns(content, "{*", "*}");
-        assert!(res.is_some());
-        let res = res.unwrap();
-        assert_eq!(res.from, 0);
-        assert_eq!(res.to, 170);
-    }
 
     #[test]
     fn test_equal_open_and_closing_pattern() {
