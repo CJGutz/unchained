@@ -5,14 +5,6 @@ use super::{
     operations::{get_template_operation, operation_params_and_children, template_operation},
 };
 
-pub fn render(mut content: String, context: Option<ContextMap>) -> WebResult<String> {
-    let context = &context.unwrap_or_default();
-
-    // Loop through characters. If {* found. Look for *} and take in name, params, children on the way
-    //
-
-    return Ok(content);
-}
 
 pub fn render_html(mut content: String, context: Option<ContextMap>) -> WebResult<String> {
     let context = &context.unwrap_or_default();
