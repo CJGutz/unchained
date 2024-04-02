@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-
 #[derive(Debug, Clone)]
 pub enum Primitive {
     Str(String),
@@ -40,7 +39,7 @@ impl ToString for Primitive {
         match self {
             Primitive::Str(a) => a.to_string(),
             Primitive::Num(a) => a.to_string(),
-            Primitive::Bool(a) => a.to_string()
+            Primitive::Bool(a) => a.to_string(),
         }
     }
 }
@@ -54,7 +53,10 @@ pub fn ctx_map<const N: usize>(array: [(&str, ContextTree); N]) -> ContextTree {
     for (s, c) in array.iter() {
         string_array.push((s.to_string(), c.clone()));
     }
-    let map: HashMap<String, ContextTree> = array.iter().map(|(s, c)| (s.to_string(), c.clone())).collect();
+    let map: HashMap<String, ContextTree> = array
+        .iter()
+        .map(|(s, c)| (s.to_string(), c.clone()))
+        .collect();
     ContextTree::Branch(Box::new(map))
 }
 

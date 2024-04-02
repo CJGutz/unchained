@@ -7,7 +7,6 @@ pub struct Match {
     pub content: String,
 }
 
-
 /// Finds the first match of from and to in the content.
 /// Example:
 /// ```
@@ -38,11 +37,13 @@ pub fn find_between(content: &str, from: &str, to: &str) -> Option<Match> {
     })
 }
 
-
 /// Iterates through iterator and tries to match it with a str slice.
-/// Returns true if they have equal characters and how many items were 
+/// Returns true if they have equal characters and how many items were
 /// iterated through.
-fn chars_equal_for_length(iter: &mut dyn Iterator<Item = char>, to_match: &mut dyn Iterator<Item = char>) -> (bool, usize) {
+fn chars_equal_for_length(
+    iter: &mut dyn Iterator<Item = char>,
+    to_match: &mut dyn Iterator<Item = char>,
+) -> (bool, usize) {
     let mut zipped = iter.zip(to_match);
     let mut index = 0;
     while let Some(ch) = zipped.next() {
@@ -50,13 +51,15 @@ fn chars_equal_for_length(iter: &mut dyn Iterator<Item = char>, to_match: &mut d
         if ch.0 != ch.1 {
             return (false, index);
         }
-
     }
     return (true, index);
 }
 
-pub fn between_connected_patterns(content: &str, opening_pattern: &str, closing_pattern: &str) -> Option<Match> {
-
+pub fn between_connected_patterns(
+    content: &str,
+    opening_pattern: &str,
+    closing_pattern: &str,
+) -> Option<Match> {
     if opening_pattern == closing_pattern {
         return find_between(content, opening_pattern, closing_pattern);
     }
@@ -76,10 +79,10 @@ pub fn between_connected_patterns(content: &str, opening_pattern: &str, closing_
             _ if ch == opening_first_char.unwrap() => {
                 let (matches, index_to_add) = chars_equal_for_length(
                     chars.clone().borrow_mut(),
-                    opening_pattern.chars().skip(1).borrow_mut()
-                ); 
+                    opening_pattern.chars().skip(1).borrow_mut(),
+                );
                 if index_to_add > 0 {
-                    chars.nth(index_to_add-1);
+                    chars.nth(index_to_add - 1);
                 }
                 index += index_to_add;
                 if matches {
@@ -88,14 +91,14 @@ pub fn between_connected_patterns(content: &str, opening_pattern: &str, closing_
                         first_index = Some(index + 1 - opening_pattern.len());
                     }
                 }
-            },
-            _ if ch == closing_first_char.unwrap() && first_index.is_some()=> {
+            }
+            _ if ch == closing_first_char.unwrap() && first_index.is_some() => {
                 let (matches, index_to_add) = chars_equal_for_length(
                     chars.clone().borrow_mut(),
-                    closing_pattern.chars().skip(1).borrow_mut()
-                ); 
+                    closing_pattern.chars().skip(1).borrow_mut(),
+                );
                 if index_to_add > 0 {
-                    chars.nth(index_to_add-1);
+                    chars.nth(index_to_add - 1);
                 }
                 index += index_to_add;
                 if matches {
@@ -105,12 +108,14 @@ pub fn between_connected_patterns(content: &str, opening_pattern: &str, closing_
                         return Some(Match {
                             from: first_index,
                             to: index,
-                            content: content[first_index+opening_pattern.len()..index-closing_pattern.len()+1].to_string(),
+                            content: content[first_index + opening_pattern.len()
+                                ..index - closing_pattern.len() + 1]
+                                .to_string(),
                         });
                     }
                 }
-            },
-            _ => {},
+            }
+            _ => {}
         }
         index += 1;
     }
@@ -143,9 +148,7 @@ pub fn remove_between(content: &str, from: &str, to: &str) -> Option<(String, St
 
 #[cfg(test)]
 mod tests {
-    use crate::templates::text_parse::{
-        between_connected_patterns, find_between, remove_between, 
-    };
+    use crate::templates::text_parse::{between_connected_patterns, find_between, remove_between};
     #[test]
     fn test_get_between_in_one_line_match_w_equal_patterns() {
         let found = find_between("content that | contains patterns |", "|", "|");
