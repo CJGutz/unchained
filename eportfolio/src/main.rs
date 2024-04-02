@@ -59,7 +59,6 @@ fn main() {
     );
 
     let start = std::time::Instant::now();
-    // let template = template("templates/even-smaller.html", None);
     let template = template("templates/landing.html", Some(context));
     let duration = start.elapsed();
     println!("Finished rendering after {} s", duration.as_secs_f64());
