@@ -4,9 +4,10 @@ use crate::error::{Error, WebResult};
 
 use super::{
     context::{ctx_str, ContextMap, ContextTree as Ctx, Primitive::*},
-    render::{render_html, template},
+    render::{load_template, render_html, RenderOptions},
     text_parse::{between_connected_patterns, Match},
 };
+
 
 const INSIDE_COMPONENT_OP_ID: &str = "inside_component_operation_identifier";
 
@@ -39,7 +40,7 @@ pub fn operation_params_and_children(operation: &str) -> Option<TemplateOperatio
 
     if let Some(find) = find {
         let mut operation = operation.to_string();
-        operation.replace_range(find.from..find.to + 1, "");
+        operation.replace_range(find.from..=find.to, "");
 
         let op_call = childless_templ_op_call(&operation);
         return match op_call {
@@ -53,7 +54,7 @@ pub fn operation_params_and_children(operation: &str) -> Option<TemplateOperatio
     childless_templ_op_call(operation)
 }
 
-pub type TemplateOperation = fn(TemplateOperationCall, &ContextMap) -> WebResult<String>;
+pub type TemplateOperation = fn(TemplateOperationCall, &ContextMap, &RenderOptions) -> WebResult<String>;
 /// Example template operation
 /// ```
 /// {* if boolean {
@@ -68,6 +69,7 @@ pub fn get_template_operation(op_name: &str, custom_operations: HashMap<&str, Te
         "if" => Some(if_operation),
         "component" => Some(component_operation),
         "slot" => Some(slot),
+        "comment" => Some(comment_operation),
         s => custom_operations.get(s).copied(),
     }
 }
@@ -115,12 +117,12 @@ fn attribute_from_context(attribute: &str, context: &ContextMap) -> WebResult<St
     Ok(resulting_attribute.unwrap())
 }
 
-fn attribute_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
+fn attribute_operation(call: TemplateOperationCall, context: &ContextMap, _options: &RenderOptions) -> WebResult<String> {
     let attribute = unwrap_n_params::<1>(&call.parameters)?[0];
     attribute_from_context(attribute, context)
 }
 
-fn if_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
+fn if_operation(call: TemplateOperationCall, context: &ContextMap, _options: &RenderOptions) -> WebResult<String> {
     let first_param = unwrap_n_params::<1>(&call.parameters)?[0];
     let display_content = match first_param {
         "true" => true,
@@ -144,7 +146,20 @@ fn if_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<
     Ok(String::new())
 }
 
-fn for_loop_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
+/// Iterates over a range from the parameters
+/// Expects three parameters: element, "in", range
+/// Range needs to be a context array 
+/// Element is the name of the variable
+/// that changes in each iteration to the 
+/// next value in the range.
+/// Example:
+/// ```
+/// {* for element in range {
+///    <div>{element}</div>
+///    }
+/// *}
+/// ```
+fn for_loop_operation(call: TemplateOperationCall, context: &ContextMap, _options: &RenderOptions) -> WebResult<String> {
     let param_slice = unwrap_n_params::<3>(&call.parameters)?;
     let (element, range_key) = match param_slice {
         [element, "in", range] => (element, range),
@@ -182,7 +197,7 @@ fn for_loop_operation(call: TemplateOperationCall, context: &ContextMap) -> WebR
     for item in range.iter() {
         new_context.insert(element.to_string(), (*item).clone());
         iterated_content.push_str(
-            render_html(children.clone(), Some(new_context.to_owned()))
+            render_html(children.clone(), Some(new_context.to_owned()), &RenderOptions::empty())
                 .unwrap()
                 .as_str(),
         );
@@ -198,7 +213,6 @@ fn for_loop_operation(call: TemplateOperationCall, context: &ContextMap) -> WebR
 /// Context can be given to the component. If it is,
 /// other context data is removed.
 ///
-/// TODO: Update the render method to insert own operations
 /// ```
 /// <!-- page.html -->
 /// {* component file.html data=object.attribute {
@@ -215,7 +229,7 @@ fn for_loop_operation(call: TemplateOperationCall, context: &ContextMap) -> WebR
 /// </div>
 /// ```
 ///
-fn component_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
+fn component_operation(call: TemplateOperationCall, context: &ContextMap, options: &RenderOptions) -> WebResult<String> {
     let parameters = call.parameters;
     let file_path = parameters.get(0);
     let file_path = match file_path {
@@ -263,7 +277,7 @@ fn component_operation(call: TemplateOperationCall, context: &ContextMap) -> Web
         }
     }
 
-    let rendered = template(file_path, Some(new_context))?;
+    let rendered = load_template(file_path, Some(new_context), options)?;
 
     Ok(rendered)
 }
@@ -289,7 +303,7 @@ fn component_operation(call: TemplateOperationCall, context: &ContextMap) -> Web
 /// </div>
 /// ```
 ///
-fn slot(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
+fn slot(call: TemplateOperationCall, context: &ContextMap, _options: &RenderOptions) -> WebResult<String> {
     let slot_name = unwrap_n_params::<1>(&call.parameters)?[0];
     if let Some(Ctx::Leaf(Bool(inside_component))) = context.get(INSIDE_COMPONENT_OP_ID) {
         if !inside_component {
@@ -303,4 +317,12 @@ fn slot(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> 
         _ => String::new(),
     };
     Ok(content_to_include)
+}
+
+/// Add a comment to the html to not render
+/// ```
+/// {* comment Any information to not render *}
+/// ```
+fn comment_operation(_call: TemplateOperationCall, _context: &ContextMap, _options: &RenderOptions) -> WebResult<String> {
+    Ok(String::new())
 }

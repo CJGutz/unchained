@@ -5,7 +5,7 @@
 
 
 - Easy to use
-- Easy to extend (soon)
+- Easy to extend
 - No extra dependencies
 
 ### Examples

@@ -116,9 +116,9 @@ fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) {
     buf_read.read_line(&mut content_read).unwrap();
 
     let first_line = content_read.lines().take(1).collect::<String>();
-    let (verb, path) = match first_line.split(' ').collect::<Vec<_>>()[0..3] {
+    let (verb, path) = match first_line.split(' ').collect::<Vec<_>>()[..] {
         [verb, path, _version] => (verb, path),
-        _ => todo!(),
+        _ => panic!("Unimplemented request handle for: {}", first_line)
     };
 
     let mut headers = HashMap::new();

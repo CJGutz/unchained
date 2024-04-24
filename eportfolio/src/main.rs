@@ -5,7 +5,7 @@ use unchained::{
     router::{HTTPVerb::*, ResponseContent, Route, Server},
     templates::{
         context::{ctx_map, ctx_str, ctx_vec},
-        render::template,
+        render::{load_template, RenderOptions},
     },
 };
 
@@ -59,7 +59,7 @@ fn main() {
     );
 
     let start = std::time::Instant::now();
-    let template = template("templates/landing.html", Some(context));
+    let template = load_template("templates/landing.html", Some(context), &RenderOptions::empty());
     let duration = start.elapsed();
     println!("Finished rendering after {} s", duration.as_secs_f64());
 
