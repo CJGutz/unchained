@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use unchained::{
     error::Error,
-    router::{start_server, HTTPVerb::*, ResponseContent, Route, ServerOptions},
+    router::{HTTPVerb::*, ResponseContent, Route, Server, ServerOptions},
     templates::{
         context::{ctx_map, ctx_str, ctx_vec},
         render::template,
@@ -78,5 +78,6 @@ fn main() {
         ),
         Route::new(GET, "/images/*", ResponseContent::FolderAccess),
     ];
-    start_server(routes, ServerOptions { address: None });
+    let server = Server::new(routes);
+    server.listen();
 }

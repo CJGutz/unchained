@@ -1,6 +1,7 @@
-use unchained::router::{start_server, ServerOptions};
+use unchained::router::Server;
 
 fn main() {
     let routes = vec![];
-    start_server(routes, ServerOptions { address: None });
+    let server = Server::new(routes);
+    server.listen();
 }

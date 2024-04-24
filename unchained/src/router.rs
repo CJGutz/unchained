@@ -1,8 +1,5 @@
 use std::{
-    collections::HashMap,
-    io::{BufRead, BufReader, Write},
-    net::{TcpListener, TcpStream},
-    path::PathBuf,
+    collections::HashMap, io::{BufRead, BufReader, Write}, net::{TcpListener, TcpStream, SocketAddr}, path::PathBuf
 };
 
 pub struct Request {
@@ -10,6 +7,27 @@ pub struct Request {
     pub path: String,
     pub body: Option<String>,
     pub headers: HashMap<String, String>,
+}
+
+pub enum HTTPVerb {
+    GET,
+    POST,
+    UPDATE,
+    DELETE,
+    HEAD,
+}
+
+impl ToString for HTTPVerb {
+    fn to_string(&self) -> String {
+        match self {
+            HTTPVerb::GET => "GET",
+            HTTPVerb::POST => "POST",
+            HTTPVerb::UPDATE => "UPDATE",
+            HTTPVerb::DELETE => "DELETE",
+            HTTPVerb::HEAD => "HEAD",
+        }
+        .to_string()
+    }
 }
 
 pub struct Response {
@@ -57,13 +75,7 @@ impl Route {
 
 fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
     for route in routes {
-        let route_verb = match route.verb {
-            HTTPVerb::GET => "GET",
-            HTTPVerb::POST => "POST",
-            HTTPVerb::UPDATE => "UPDATE",
-            HTTPVerb::DELETE => "DELETE",
-            HTTPVerb::HEAD => "HEAD",
-        };
+        let route_verb = route.verb.to_string();
         let route_path = route
             .path
             .trim_end_matches('/')
@@ -147,29 +159,35 @@ fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) {
     stream.shutdown(std::net::Shutdown::Both).unwrap();
 }
 
-pub enum HTTPVerb {
-    GET,
-    POST,
-    UPDATE,
-    DELETE,
-    HEAD,
-}
-
 pub struct ServerOptions {
-    pub address: Option<String>,
+    pub address: String,
 }
 
 const ADDRESS: &str = "localhost:8080";
 
-pub fn start_server(routes: Vec<Route>, options: ServerOptions) {
-    let address = TcpListener::bind(options.address.unwrap_or(ADDRESS.to_string())).unwrap();
-    for stream in address.incoming() {
-        match stream {
-            Ok(stream) => handle_connection(stream, &routes),
-            Err(_) => {
-                println!("Could not handle tcp connection.");
-                return;
+pub struct Server {
+    pub routes: Vec<Route>,
+    pub options: ServerOptions,
+}
+
+impl Server {
+    pub fn new(routes: Vec<Route>) -> Server {
+        Server { routes, options: ServerOptions { address: ADDRESS.to_string() } }
+    }
+    pub fn set_address(&mut self, address: &str) {
+        self.options.address = address.to_string();
+    }
+    pub fn listen(&self) {
+        let address = TcpListener::bind(self.options.address.clone()).unwrap();
+        for stream in address.incoming() {
+            match stream {
+                Ok(stream) => handle_connection(stream, &self.routes),
+                Err(_) => {
+                    println!("Could not handle tcp connection.");
+                    return;
+                }
             }
         }
     }
 }
+
