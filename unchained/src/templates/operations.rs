@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::error::{Error, WebResult};
 
 use super::{
@@ -51,7 +53,7 @@ pub fn operation_params_and_children(operation: &str) -> Option<TemplateOperatio
     childless_templ_op_call(operation)
 }
 
-type TemplateOperation = fn(TemplateOperationCall, &ContextMap) -> WebResult<String>;
+pub type TemplateOperation = fn(TemplateOperationCall, &ContextMap) -> WebResult<String>;
 /// Example template operation
 /// ```
 /// {* if boolean {
@@ -59,13 +61,14 @@ type TemplateOperation = fn(TemplateOperationCall, &ContextMap) -> WebResult<Str
 /// }
 /// *}
 /// ```
-pub fn get_template_operation(op_name: &str) -> Option<TemplateOperation> {
+pub fn get_template_operation(op_name: &str, custom_operations: HashMap<&str, TemplateOperation>) -> Option<TemplateOperation> {
     match op_name {
+        "get" => Some(attribute_operation),
         "for" => Some(for_loop_operation),
         "if" => Some(if_operation),
         "component" => Some(component_operation),
         "slot" => Some(slot),
-        _ => Some(attribute_operation),
+        s => custom_operations.get(s).copied(),
     }
 }
 
@@ -113,7 +116,8 @@ fn attribute_from_context(attribute: &str, context: &ContextMap) -> WebResult<St
 }
 
 fn attribute_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {
-    attribute_from_context(&call.name, context)
+    let attribute = unwrap_n_params::<1>(&call.parameters)?[0];
+    attribute_from_context(attribute, context)
 }
 
 fn if_operation(call: TemplateOperationCall, context: &ContextMap) -> WebResult<String> {

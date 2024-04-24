@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::error::{Error, WebResult};
 
 use super::{
@@ -15,7 +17,7 @@ pub fn render_html(mut content: String, context: Option<ContextMap>) -> WebResul
         }
         let result = result.unwrap();
         if let Some(op_call) = operation_params_and_children(&result.content) {
-            if let Some(operation) = get_template_operation(&op_call.name) {
+            if let Some(operation) = get_template_operation(&op_call.name, HashMap::new()) {
                 let replacement = operation(op_call, context)?;
                 content.replace_range(result.from..result.to + 1, &replacement)
             } else {

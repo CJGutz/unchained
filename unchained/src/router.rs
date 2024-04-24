@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap, io::{BufRead, BufReader, Write}, net::{TcpListener, TcpStream, SocketAddr}, path::PathBuf
+    collections::HashMap, io::{BufRead, BufReader, Write}, net::{TcpListener, TcpStream}, path::PathBuf
 };
 
 pub struct Request {
