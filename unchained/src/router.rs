@@ -1,6 +1,8 @@
 use std::{
-    collections::HashMap, io::{BufRead, BufReader, Write}, net::{TcpListener, TcpStream}, path::PathBuf
+    collections::HashMap, io::{BufRead, BufReader, Write}, net::{TcpListener, TcpStream}, path::PathBuf, sync::Arc
 };
+
+use crate::workers::Workers;
 
 pub struct Request {
     pub verb: String,
@@ -53,7 +55,7 @@ impl Response {
 pub enum ResponseContent {
     Str(String),
     Bytes(Vec<u8>),
-    FromRequest(Box<dyn Fn(Request) -> Response>),
+    FromRequest(Box<dyn Fn(Request) -> Response + Sync + Send>),
     FolderAccess,
 }
 
@@ -161,30 +163,37 @@ fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) {
 
 pub struct ServerOptions {
     pub address: String,
+    pub threads: u32,
 }
 
-const ADDRESS: &str = "localhost:8080";
+const ADDRESS: &str = "0.0.0.0:8080";
 
 pub struct Server {
-    pub routes: Vec<Route>,
+    pub routes: Arc<Vec<Route>>,
     pub options: ServerOptions,
 }
 
 impl Server {
     pub fn new(routes: Vec<Route>) -> Server {
-        Server { routes, options: ServerOptions { address: ADDRESS.to_string() } }
+        let a: Arc<Vec<Route>> = Arc::from(routes);
+        Server { routes: a, options: ServerOptions { address: ADDRESS.to_string(), threads: 4 } }
     }
     pub fn set_address(&mut self, address: &str) {
         self.options.address = address.to_string();
     }
     pub fn listen(&self) {
         let address = TcpListener::bind(self.options.address.clone()).unwrap();
+        let mut workers = Workers::new(self.options.threads);
         for stream in address.incoming() {
             match stream {
-                Ok(stream) => handle_connection(stream, &self.routes),
+                Ok(stream) => {
+                    let routes = self.routes.clone();
+                    workers.post(move || {
+                        handle_connection(stream, &routes);
+                    });
+                } ,
                 Err(_) => {
                     println!("Could not handle tcp connection.");
-                    return;
                 }
             }
         }
