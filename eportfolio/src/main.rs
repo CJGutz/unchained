@@ -4,10 +4,10 @@ use unchained::{
     error::Error,
     router::{HTTPVerb::*, ResponseContent, Route, Server},
     templates::{
-        context::{ctx_map, ctx_str, ctx_vec},
-        render::{load_template, RenderOptions},
+        context::{ctx_map, ctx_str, ctx_vec}, render::{load_template, RenderOptions}
     },
 };
+
 
 fn main() {
     let mut context = HashMap::new();

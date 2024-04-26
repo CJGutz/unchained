@@ -74,7 +74,7 @@ pub fn get_template_operation(op_name: &str, custom_operations: HashMap<&str, Te
     }
 }
 
-fn unwrap_n_params<const N: usize>(params: &Vec<String>) -> WebResult<[&str; N]> {
+pub fn unwrap_n_params<const N: usize>(params: &Vec<String>) -> WebResult<[&str; N]> {
     let mut arr = [""; N];
     if params.len() != N {
         return Err(Error::InvalidParams(format!(
