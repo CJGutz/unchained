@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use unchained::{
-    error::{Error, WebResult},
+    error::Error,
     router::{HTTPVerb::*, ResponseContent, Route, Server},
     templates::{
         context::{ctx_map, ctx_str, ctx_vec, ContextTree, Primitive}, render::{load_template, RenderOptions}
@@ -129,10 +129,8 @@ fn main() {
 
 
     let start = std::time::Instant::now();
-    // let landing = load_template("templates/landing.html", Some(context_landing), &RenderOptions::empty());
-    // let skills = load_template("templates/skills.html", Some(context_skills), &RenderOptions::empty());
-    let landing: WebResult<String> = WebResult::Err(Error::InvalidParams("Failed to load template".to_string()));
-    let skills: WebResult<String> = WebResult::Err(Error::InvalidParams("Failed to load template".to_string()));
+    let landing = load_template("templates/landing.html", Some(context_landing), &RenderOptions::empty());
+    let skills = load_template("templates/skills.html", Some(context_skills), &RenderOptions::empty());
     let experience = load_template("templates/experience.html", Some(context_experience), &RenderOptions::empty());
     let duration = start.elapsed();
     println!("Finished rendering after {} s", duration.as_secs_f64());

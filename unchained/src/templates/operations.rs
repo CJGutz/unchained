@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::error::{Error, WebResult};
 
 use super::{
-    context::{ctx_str, ContextMap, ContextTree as Ctx, Primitive::*},
+    context::{ContextMap, ContextTree as Ctx, Primitive::*},
     render::{load_template, render_html, RenderOptions},
     text_parse::{between_connected_patterns, Match},
 };
@@ -88,21 +88,28 @@ pub fn unwrap_n_params<const N: usize>(params: &Vec<String>) -> WebResult<[&str;
     Ok(arr)
 }
 
-fn attribute_from_context(attribute: &str, context: &ContextMap) -> WebResult<String> {
+fn attribute_from_context(attribute: &str, context: &ContextMap) -> WebResult<Ctx> {
     let splitted = attribute.split('.');
     let mut resulting_attribute = None;
     let mut new_context = context.clone();
-    for attribute in splitted {
+    
+    let mut last = false;
+    let splitted = splitted.collect::<Vec<&str>>();
+    for i in 0..splitted.len() {
+        if i == splitted.len() - 1 {
+            last = true;
+        }
+        let attribute = splitted[i];
         resulting_attribute = match new_context.get(attribute) {
-            Some(Ctx::Leaf(s)) => Some(match s {
-                Str(s) => s.to_string(),
-                Num(n) => n.to_string(),
-                Bool(b) => b.to_string(),
-            }),
             Some(Ctx::Branch(b)) => {
-                new_context = *b.clone();
-                continue;
+                if last {
+                    Some(Ctx::Branch(b.clone()))
+                } else {
+                    new_context = *b.clone();
+                    continue;
+                }
             }
+            Some(s) => Some(s.clone()),
             _ => {
                 return Err(Error::InvalidParams(format!(
                     "Invalid attribute: {} not found in context",
@@ -112,14 +119,28 @@ fn attribute_from_context(attribute: &str, context: &ContextMap) -> WebResult<St
         };
     }
     if resulting_attribute.is_none() {
-        return Err(Error::InvalidParams("Invalid property access".to_string()));
+        return Err(Error::InvalidParams(format!("Attribute {} not found in context", attribute)));
     }
     Ok(resulting_attribute.unwrap())
 }
 
 fn attribute_operation(call: TemplateOperationCall, context: &ContextMap, _options: &RenderOptions) -> WebResult<String> {
     let attribute = unwrap_n_params::<1>(&call.parameters)?[0];
-    attribute_from_context(attribute, context)
+    match attribute_from_context(attribute, context) {
+        Ok(a) => match a {
+            Ctx::Leaf(s) => Ok(s.to_string()),
+            Ctx::Slot(s) => Ok(s.to_string()),
+            Ctx::Branch(_) => Err(Error::InvalidParams(format!(
+                "Attribute {} is a nested object. Retrieve a primitive instead.",
+                attribute
+            ))),
+            Ctx::Array(_) => Err(Error::InvalidParams(format!(
+                "Attribute {} is an array. Retrieve a primitive instead.",
+                attribute
+            ))),
+        },
+        Err(e) => Err(e),
+    }
 }
 
 fn if_operation(call: TemplateOperationCall, context: &ContextMap, _options: &RenderOptions) -> WebResult<String> {
@@ -127,15 +148,12 @@ fn if_operation(call: TemplateOperationCall, context: &ContextMap, _options: &Re
     let display_content = match first_param {
         "true" => true,
         "false" => false,
-        _ => match context.get(first_param) {
-            Some(Ctx::Leaf(Bool(bool))) => *bool,
+        _ => match attribute_from_context(first_param, context)? {
+            Ctx::Leaf(Bool(bool)) => bool,
             res => {
                 return Err(Error::InvalidParams(format!(
                     "Expected value resolve to boolean, but found {:?}",
-                    res.unwrap_or(&ctx_str(&format!(
-                        "(no value for '{}' in context)",
-                        first_param
-                    )))
+                    res
                 )))
             }
         },
@@ -170,14 +188,9 @@ fn for_loop_operation(call: TemplateOperationCall, context: &ContextMap, _option
             )))
         }
     };
-    let range = match context.get(range_key) {
-        Some(Ctx::Array(arr)) => arr,
-        None => {
-            return Err(Error::InvalidParams(format!(
-                "Found no context value for {range_key}"
-            )))
-        }
-        Some(res) => {
+    let range = match attribute_from_context(range_key, context)? {
+        Ctx::Array(arr) => arr,
+        res => {
             return Err(Error::InvalidParams(format!(
                 "Range has to be a context array. Got {:?}",
                 res
@@ -244,14 +257,14 @@ fn component_operation(call: TemplateOperationCall, context: &ContextMap, option
         new_context.clear();
         parameters
             .iter()
-            .skip(1)
+            .skip(1) // Skip file path
             .map(|p| p.split('=').collect::<Vec<_>>())
             .for_each(|p| {
                 if p.len() != 2 {
                     return;
                 }
                 let item = attribute_from_context(p[1], context);
-                new_context.insert(p[0].to_string(), Ctx::Leaf(Str(item.unwrap())));
+                new_context.insert(p[0].to_string(), item.unwrap());
             });
     }
 
