@@ -8,6 +8,18 @@ use unchained::{
     },
 };
 
+use std::time::{SystemTime, UNIX_EPOCH};
+
+fn current_year() -> u64 {
+    let current_time = SystemTime::now();
+    let since_epoch = current_time.duration_since(UNIX_EPOCH).unwrap();
+    let seconds_since_epoch = since_epoch.as_secs();
+    let seconds_in_year: u64 = 60 * 60 * 24 * 365;
+
+    let current_year = 1970 + (seconds_since_epoch / seconds_in_year);
+    current_year
+}
+
 fn handle_error(e: &Error) -> String {
     match e {
         Error::InvalidParams(s) => s.to_string(),
@@ -32,6 +44,10 @@ fn create_skill_context(id: &str, name: &str, description: &str, score: isize, i
 fn main() {
     let mut context_landing = HashMap::new();
     let mut context_skills = HashMap::new();
+
+    let current_year: isize = current_year().try_into().unwrap();
+    context_landing.insert("current_year".to_string(), ContextTree::Leaf(Primitive::Num(current_year)));
+    context_skills.insert("current_year".to_string(), ContextTree::Leaf(Primitive::Num(current_year)));
 
     let page_links = ctx_vec(vec![
             ctx_map([("href", ctx_str("/#about")), ("label", ctx_str("About me"))]),
