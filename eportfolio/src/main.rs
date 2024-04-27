@@ -49,7 +49,7 @@ fn create_experience(id: &str, title: &str, description: &str, image_path: &str)
             ("demo_link", ctx_str("https://gutzkow.com")),
             ("source_link", ctx_str("https://github.com/cjgutz")),
             ("tech", ctx_vec(vec![ctx_str("django"), ctx_str("docker")])),
-            ("show_date_end", ContextTree::Leaf(Primitive::Bool(true))),
+            ("show_date_end", ContextTree::Leaf(Primitive::Bool(false))),
         ])
 }
 

@@ -150,6 +150,9 @@ fn if_operation(call: TemplateOperationCall, context: &ContextMap, _options: &Re
         "false" => false,
         _ => match attribute_from_context(first_param, context)? {
             Ctx::Leaf(Bool(bool)) => bool,
+            Ctx::Leaf(Str(str)) => !str.is_empty(),
+            Ctx::Leaf(Num(num)) => num != 0,
+            Ctx::Array(arr) => arr.is_empty(),
             res => {
                 return Err(Error::InvalidParams(format!(
                     "Expected value resolve to boolean, but found {:?}",
