@@ -4,27 +4,48 @@ use unchained::{
     error::Error,
     router::{HTTPVerb::*, ResponseContent, Route, Server},
     templates::{
-        context::{ctx_map, ctx_str, ctx_vec}, render::{load_template, RenderOptions}
+        context::{ctx_map, ctx_str, ctx_vec, ContextTree, Primitive}, render::{load_template, RenderOptions}
     },
 };
 
+fn handle_error(e: &Error) -> String {
+    match e {
+        Error::InvalidParams(s) => s.to_string(),
+        Error::LoadFile(s) => s.to_string(),
+        Error::ParseTemplate(s) => s.to_string(),
+    }
+}
+
+fn create_skill_context(id: &str, name: &str, description: &str, score: isize, image_alt: &str, image_ppath: &str) -> ContextTree {
+    return ctx_map([
+            ("name", ctx_str(name)),
+            ("id", ctx_str(id)),
+            ("description", ctx_str(description)),
+            ("score", ContextTree::Leaf(Primitive::Num(score))),
+            ("alt", ctx_str(image_alt)),
+            ("image", ctx_str(image_ppath)),
+            ("percentage", ContextTree::Leaf(Primitive::Num(score * 100 / 5))),
+        ])
+}
+
 
 fn main() {
-    let mut context = HashMap::new();
+    let mut context_landing = HashMap::new();
+    let mut context_skills = HashMap::new();
 
-    context.insert(
-        "page_links".to_string(),
-        ctx_vec(vec![
+    let page_links = ctx_vec(vec![
             ctx_map([("href", ctx_str("/#about")), ("label", ctx_str("About me"))]),
             ctx_map([
                 ("href", ctx_str("/experience")),
                 ("label", ctx_str("Experience")),
             ]),
             ctx_map([("href", ctx_str("/skills")), ("label", ctx_str("Skills"))]),
-        ]),
-    );
+        ]);
+    context_landing.insert("page_links".to_string(), page_links.clone());
+    context_skills.insert("page_links".to_string(), page_links);
 
-    context.insert(
+
+    context_landing.insert(
         "carl_images".to_string(),
         ctx_vec(vec![
             ctx_map([
@@ -58,8 +79,21 @@ fn main() {
         ]),
     );
 
+    context_skills.insert("skills".to_string(), ctx_vec(vec![
+        create_skill_context("django", "Django", "I have used Django in various projects in Index, Hackerspace, and Ei Solutions. It has been my Go To framework for backend developement because of its simplicity, scalability, and effeciency.", 5, "Icon of Django", "django.png"),
+        create_skill_context("docker", "Docker", "I have used docker in several projects with Index, Hackerspace, and Ei Solutions. It has been very useful in both development and deployment. Yet, it is incredibly complex to master. My skill with Docker centers around using Compose and creating Dockerfiles.", 4, "Icon of Docker", "docker.png"),
+        create_skill_context("java", "Java", "Java was used extensively at NTNU and was often required for school projects with Spring Boot, Maven and more.", 5, "Icon of Java", "java.png"),
+        create_skill_context("next", "Next", "This SSR framework was used to build my bachelor thesis product in addition to the landing page for Ei Solutions.", 3, "Icon of Next", "next.png"),
+        create_skill_context("postgis", "PostGIS", "This Postgres extension has been used to store and query spatial data in Ei Solutions. Postgres with PostGIS is by far the best relational geospatial database.", 3, "Icon of PostGIS", "postgis.png"),
+        create_skill_context("qgis", "QGIS", "In Ei Solutions, I used QGIS to pre-process datasets before storing them in a PostGIS database.", 3, "Icon of QGIS", "qgis.png"),
+        create_skill_context("python", "Python", "Python was my my first introduction to programming with a clear goal in mind. It has been used in my projects with Django. It was also used in the CS50-AI course with Tensorflow.", 4, "Icon of Python", "python.svg"),
+        create_skill_context("typescript", "TypeScript", "Typescript has been used in all Front end projects. In high school, I was introduced to Javascript, but after learning Typescript, I have understood that I can never go back", 4, "Icon of TypeScript", "typescript.svg"),
+        create_skill_context("rust", "Rust", "I enjoy writing in this language and have created some fun projects with it, including this website.", 4, "Icon of Rust", "rust.svg"),
+    ]));
+
     let start = std::time::Instant::now();
-    let template = load_template("templates/landing.html", Some(context), &RenderOptions::empty());
+    let landing = load_template("templates/landing.html", Some(context_landing), &RenderOptions::empty());
+    let skills = load_template("templates/skills.html", Some(context_skills), &RenderOptions::empty());
     let duration = start.elapsed();
     println!("Finished rendering after {} s", duration.as_secs_f64());
 
@@ -67,13 +101,17 @@ fn main() {
         Route::new(
             GET,
             "/",
-            ResponseContent::Str(match &template {
+            ResponseContent::Str(match &landing {
                 Ok(template) => template.to_string(),
-                Err(e) => match e {
-                    Error::InvalidParams(s) => s.to_string(),
-                    Error::LoadFile(s) => s.to_string(),
-                    Error::ParseTemplate(s) => s.to_string(),
-                },
+                Err(e) => handle_error(e),
+            }),
+        ),
+        Route::new(
+            GET,
+            "/skills",
+            ResponseContent::Str(match &skills {
+                Ok(template) => template.to_string(),
+                Err(e) => handle_error(e),
             }),
         ),
         Route::new(GET, "/images/*", ResponseContent::FolderAccess),
