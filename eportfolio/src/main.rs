@@ -16,8 +16,7 @@ fn current_year() -> u64 {
     let seconds_since_epoch = since_epoch.as_secs();
     let seconds_in_year: u64 = 60 * 60 * 24 * 365;
 
-    let current_year = 1970 + (seconds_since_epoch / seconds_in_year);
-    current_year
+    1970 + (seconds_since_epoch / seconds_in_year)
 }
 
 fn handle_error(e: &Error) -> String {
@@ -29,7 +28,7 @@ fn handle_error(e: &Error) -> String {
 }
 
 fn create_skill_context(id: &str, name: &str, description: &str, score: isize, image_alt: &str, image_ppath: &str) -> ContextTree {
-    return ctx_map([
+    ctx_map([
             ("name", ctx_str(name)),
             ("id", ctx_str(id)),
             ("description", ctx_str(description)),
@@ -103,8 +102,8 @@ fn main() {
         create_skill_context("postgis", "PostGIS", "This Postgres extension has been used to store and query spatial data in Ei Solutions. Postgres with PostGIS is by far the best relational geospatial database.", 3, "Icon of PostGIS", "postgis.png"),
         create_skill_context("qgis", "QGIS", "In Ei Solutions, I used QGIS to pre-process datasets before storing them in a PostGIS database.", 3, "Icon of QGIS", "qgis.png"),
         create_skill_context("python", "Python", "Python was my my first introduction to programming with a clear goal in mind. It has been used in my projects with Django. It was also used in the CS50-AI course with Tensorflow.", 4, "Icon of Python", "python.svg"),
-        create_skill_context("typescript", "TypeScript", "Typescript has been used in all Front end projects. In high school, I was introduced to Javascript, but after learning Typescript, I have understood that I can never go back", 4, "Icon of TypeScript", "typescript.svg"),
-        create_skill_context("rust", "Rust", "I enjoy writing in this language and have created some fun projects with it, including this website.", 4, "Icon of Rust", "rust.svg"),
+        create_skill_context("typescript", "Type Script", "TypeScript has been used in all Front end projects. In high school, I was introduced to JavaScript, but after learning TypeScript, I have understood that I can never go back", 4, "Icon of TypeScript", "typescript.svg"),
+        create_skill_context("rust", "Rust", "I enjoy writing in this language and have created some fun projects with it, including this website.", 2, "Icon of Rust", "rust.svg"),
     ]));
 
     let start = std::time::Instant::now();
@@ -131,6 +130,8 @@ fn main() {
             }),
         ),
         Route::new(GET, "/images/*", ResponseContent::FolderAccess),
+        Route::new(GET, "/Poppins/Poppins-Regular.ttf", ResponseContent::Bytes(std::fs::read("Poppins/Poppins-Regular.ttf").unwrap())),
+        Route::new(GET, "/favicon.ico", ResponseContent::Bytes(std::fs::read("favicon.ico").unwrap())),
     ];
     let server = Server::new(routes);
     server.listen();

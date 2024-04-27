@@ -75,6 +75,15 @@ impl Route {
     }
 }
 
+fn read_file_to_respond(file: &str) -> Response {
+    let buf = PathBuf::from(file);
+    let file = std::fs::read(buf).ok();
+    Response {
+        bytes: file.clone(),
+        status_code: if file.is_some() { 200 } else { 404 },
+    }
+}
+
 fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
     for route in routes {
         let route_verb = route.verb.to_string();
@@ -89,12 +98,7 @@ fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
             && req_path.starts_with(route_path)
             && matches!(route.response, ResponseContent::FolderAccess)
         {
-            let buf = PathBuf::from(req_path);
-            let file = std::fs::read(buf).ok();
-            return Response {
-                bytes: file.clone(),
-                status_code: if file.is_some() { 200 } else { 404 },
-            };
+            return read_file_to_respond(req_path);
         } else if route_verb == request.verb && route_path == req_path {
             match &route.response {
                 ResponseContent::Str(s) => return Response::new_200(s.to_string()),
@@ -105,7 +109,7 @@ fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
                     }
                 }
                 ResponseContent::FromRequest(f) => return f(request),
-                ResponseContent::FolderAccess => (),
+                ResponseContent::FolderAccess => read_file_to_respond(req_path),
             };
         }
     }
