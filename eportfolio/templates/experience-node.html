@@ -1,0 +1,59 @@
+{* comment { it gets the props: date_start, show_date_end, date_end, title, description, demo_link, source_link, image } *}    
+
+<li class="mt-12 ml-10" id="{* get id *}">
+      <div
+        class="absolute w-12 h-12 bg-gray-200 rounded-full mt-4 -left-6 border border-black" >
+          <img
+            src="/images/experience/{* get image *}"
+            alt="Image of {* get title *}"
+            class="w-full h-full rounded-full"
+          />
+      </div>
+      <div>
+        <time class="mb-1 text-sm font-normal leading-none text-gray-900 ">
+      <span>{* get date_start *}</span>
+              <span>
+                <span> - </span>
+                <span>{* get date_end *}</span>
+              </span>
+        </time>
+        <h3 class="text-2xl font-semibold text-gray-900">
+          {* get title *}
+        </h3>
+        <p class="mb-4 text-base font-normal text-gray-500 ">
+          {* get description *}
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 place-items-start">
+          <a
+            href="{* get demo_link *}"
+            rel="noreferrer"
+            target="_blank"
+            class="inline-flex mvn-button px-4 py-2 text-sm font-medium text-black bg-white border border-gray-200 rounded-lg hover:bg-gray-100 focus:z-10 focus:ring-4 focus:outline-transparent focus:ring-gray-200 focus:text-blue-700 "
+          >
+            Demo
+            <img src="/images/icons/rightArrow.svg" alt="right arrow" class="ml-2" width="20px"/>
+          </a>
+            <a
+              href="{* get source_link *}"
+              target="_blank"
+              rel="noreferrer"
+              class="inline-flex mvn-button px-4 py-2 text-sm font-medium text-black bg-white border border-gray-200 rounded-lg hover:bg-gray-100 focus:z-10 focus:ring-4 focus:outline-transparent focus:ring-gray-200 focus:text-blue-700 "
+            >
+              Source Code
+              <img src="/images/icons/rightArrow.svg" alt="right arrow" class="ml-2" width="20px" />
+            </a>
+        </div>
+        <div class="flex flex-row flex-wrap mt-3 gap-3">
+          {* comment Add array to experience {
+            {* for tech in tech {
+              <a href="/skills#{* get tech *}"
+                class="bg-blue-500 mvn-button rounded-md opacity-60 px-3 py-1 text-white text-xs"
+              >
+                {* get tech *}
+              </a>
+
+            } *}
+          } *}
+        </div>
+      </div>
+    </li>
