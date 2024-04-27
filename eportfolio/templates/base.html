@@ -5,28 +5,18 @@
     <meta name="viewport" content="width=device-width">
     <title>Carl Johan Gützkow | Portfolio</title>
     {* component templates/tailwind.html *}  
-    <noscript data-n-css=""></noscript>
-    <link rel="stylesheet" href="/Poppins/Poppins-Regular.ttf" />
     <style>
-      @tailwind base;
-      @tailwind components;
-      @tailwind utilities;
-
       div {
         align-items: center;
       }
 
-    /*
       @font-face {
         font-family: 'Poppins';
-        src: local(''), url('/Poppins/Poppins-Regular.ttf') format('truetype');
+        src: url('/Poppins/Poppins-Regular.ttf');
       }
-    */
 
-      @layer base {
-        html {
+      html > * {
           font-family: Poppins, system-ui;
-        }
       }
 
       a,
@@ -40,10 +30,19 @@
         opacity: 0.8;
       }
 
-      @layer components {
-        .mvn-button {
-          @apply transition ease-in duration-200 transform hover:-translate-y-1 active:translate-y-0;
-        }
+      .mvn-button {
+        transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+        transition-duration: 200ms;
+        transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
+        transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+      }
+      .mvn-button:hover {
+        --tw-translate-y: -0.25rem/* -4px */;
+        transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+      }
+      .mvn-button:active {
+          --tw-translate-y: 0px;
+          transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
       }
 
       * {
@@ -56,18 +55,30 @@
     </style>
   </head>
   <body>
-    <div id="__next">
+    <div>
+      <script>
+        let menuOpen = false;
+        function toggleMenu(mobileMenuOpen) {
+          const menuEl = document.getElementById("menu-links");
+          const mobileMenuClasses = ["translate-y-0", "opacity-100", "opacity-0", "-translate-y-full", "h-0"]
+          for (let i = 0; i < mobileMenuClasses.length; i++) {
+            menuEl.classList.toggle(mobileMenuClasses[i]);
+          }
+          document.getElementById("mobile-menu-image").setAttribute("src", `/images/icons/${mobileMenuOpen ? 'cross' : 'hamburger'}.svg`)
+        }
+
+      </script>
       <div class="flex flex-col overflow-hidden justify-between items-stretch min-h-screen bg-gradient-radial from-light-red to-light-blue">
         <header class="bg-transparent z-30">
           <nav class="container mx-auto p-6 lg:flex lg:items-center lg:justify-between">
             <div class="flex items-center justify-between">
               <div class="z-20"><a class="text-2xl font-bold text-gray-800 hover:text-gray-700 lg:text-3xl" href="/">Carl Gützkow</a></div>
               <div class="flex lg:hidden">
-                <button class="text-gray-500 hover:text-gray-600 z-30" aria-label="toggle menu">
-                  <img alt="Hamburger Menu" src="/images/icons/hamburger.svg" width="24" height="24" decoding="async" data-nimg="1" loading="lazy" style="color:transparent"></button>
+                <button class="text-gray-500 hover:text-gray-600 z-30" aria-label="toggle menu" onclick="toggleMenu(!menuOpen); menuOpen = !menuOpen">
+                  <img id="mobile-menu-image" alt="Hamburger Menu" src="/images/icons/hamburger.svg" width="24" height="24" decoding="async" data-nimg="1" loading="lazy" style="color:transparent"></button>
               </div>
             </div>
-            <div class="opacity-0 -translate-y-full h-0 inset-x-0 w-full bg-transparent px-6 py-4 shadow-md transition-all duration-200 ease-in-out lg:relative lg:top-0 lg:mt-0 lg:flex lg:w-auto lg:translate-y-0 lg:items-center lg:bg-transparent lg:p-0 lg:opacity-100 lg:shadow-none">
+            <div class="opacity-0 -translate-y-full h-0 inset-x-0 w-full bg-transparent px-6 py-4 shadow-md transition-all duration-200 ease-in-out lg:relative lg:top-0 lg:mt-0 lg:flex lg:w-auto lg:translate-y-0 lg:items-center lg:bg-transparent lg:p-0 lg:opacity-100 lg:shadow-none" id="menu-links">
               <div class="flex flex-col space-y-4 lg:mt-0 lg:flex-row lg:space-y-0">
                 {* for link in page_links {
                   <a class="text-sm font-medium text-gray-700 hover:text-blue-500 lg:mx-4 lg:mvn-button" href="{* get link.href *}">{* get link.label *}</a>
