@@ -7,6 +7,13 @@ pub struct Match {
     pub content: String,
 }
 
+impl Match {
+    pub fn push(&mut self, length: usize) {
+        self.from += length;
+        self.to += length;
+    }
+}
+
 /// Finds the first match of from and to in the content.
 /// Example:
 /// ```

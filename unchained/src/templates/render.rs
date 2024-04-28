@@ -24,13 +24,17 @@ impl RenderOptions<'_> {
 /// Context gives template operations access to data
 pub fn render_html(mut content: String, context: Option<ContextMap>, options: &RenderOptions) -> WebResult<String> {
     let context = &context.unwrap_or_default();
+    let mut min_look_index = 0;
 
     loop {
-        let result = template_operation(&content);
+        let result = template_operation(&content[min_look_index..]);
         if result.is_none() {
             break;
         }
-        let result = result.unwrap();
+        let mut result = result.unwrap();
+        result.push(min_look_index);
+        min_look_index = result.from;
+
         if let Some(op_call) = operation_params_and_children(&result.content) {
             if let Some(operation) = get_template_operation(&op_call.name, options.custom_operations.clone()) {
                 let replacement = operation(op_call, context, options)?;
