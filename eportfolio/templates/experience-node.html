@@ -12,7 +12,7 @@
       <div>
         <time class="mb-1 text-sm font-normal leading-none text-gray-900 ">
       <span>{* get experience.date_start *}</span>
-        {* if experience.show_date_end {
+        {* if experience.date_end {
             <span>
               <span> - </span>
               <span>{* get experience.date_end *}</span>
@@ -26,15 +26,19 @@
           {* get experience.description *}
         </p>
         <div class="flex flex-col sm:flex-row gap-4 place-items-start">
-          <a
-            href="{* get experience.demo_link *}"
-            rel="noreferrer"
-            target="_blank"
-            class="inline-flex mvn-button px-4 py-2 text-sm font-medium text-black bg-white border border-gray-200 rounded-lg hover:bg-gray-100 focus:z-10 focus:ring-4 focus:outline-transparent focus:ring-gray-200 focus:text-blue-700 "
-          >
-            Demo
-            <img src="/images/icons/rightArrow.svg" alt="right arrow" class="ml-2" width="20px"/>
-          </a>
+          {* if experience.demo_link {
+            <a
+              href="{* get experience.demo_link *}"
+              rel="noreferrer"
+              target="_blank"
+              class="inline-flex mvn-button px-4 py-2 text-sm font-medium text-black bg-white border border-gray-200 rounded-lg hover:bg-gray-100 focus:z-10 focus:ring-4 focus:outline-transparent focus:ring-gray-200 focus:text-blue-700 "
+            >
+              Demo
+              <img src="/images/icons/rightArrow.svg" alt="right arrow" class="ml-2" width="20px"/>
+            </a>
+          } *}
+          {* if experience.source_link {
+
             <a
               href="{* get experience.source_link *}"
               target="_blank"
@@ -44,6 +48,7 @@
               Source Code
               <img src="/images/icons/rightArrow.svg" alt="right arrow" class="ml-2" width="20px" />
             </a>
+          } *}
         </div>
         <div class="flex flex-row flex-wrap mt-3 gap-3">
             {* for t in experience.tech {

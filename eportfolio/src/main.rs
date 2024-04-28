@@ -38,18 +38,27 @@ fn create_skill(id: &str, name: &str, description: &str, score: isize, image_pat
         ])
 }
 
-fn create_experience(id: &str, title: &str, description: &str, image_path: &str) -> ContextTree {
+fn create_experience(
+    id: &str,
+    title: &str,
+    description: &str,
+    image_path: &str,
+    date_start: &str,
+    date_end: &str,
+    demo_link: &str,
+    source_link: &str,
+    tech: Vec<&str>,
+) -> ContextTree {
     ctx_map([
             ("id", ctx_str(id)),
             ("title", ctx_str(title)),
             ("description", ctx_str(description)),
             ("image", ctx_str(image_path)),
-            ("date_start", ctx_str("2023")),
-            ("date_end", ctx_str("2024")),
-            ("demo_link", ctx_str("https://gutzkow.com")),
-            ("source_link", ctx_str("https://github.com/cjgutz")),
-            ("tech", ctx_vec(vec![ctx_str("django"), ctx_str("docker")])),
-            ("show_date_end", ContextTree::Leaf(Primitive::Bool(false))),
+            ("date_start", ctx_str(date_start)),
+            ("date_end", ctx_str(date_end)),
+            ("demo_link", ctx_str(demo_link)),
+            ("source_link", ctx_str(source_link)),
+            ("tech", ctx_vec(tech.iter().map(|t| ctx_str(t)).collect())),
         ])
 }
 
@@ -123,8 +132,11 @@ fn main() {
     ]));
 
     context_experience.insert("experience_list".to_string(), ctx_vec(vec![
-        create_experience("eisolutions", "Ei Solutions", "I love Ei Solutions", "eisolutions.jpg"),
-        create_experience("hackerspace", "Hackerspace NTNU", "I love Hackerspace NTNU", "hackerspace.png")
+        create_experience("eisolutions", "Ei Solutions AS", "Created the Back-end for a automatic EU taxonomy reporter. I also created the landing page.", "eisolutions.jpg", "Jun 2022", "", "https://eisolutions.no", "", vec!["Django", "PostGIS", "QGIS", "Docker"]),
+        create_experience("hackerspace-devops", "DevOps Member and Team Leader - Hackerspace NTNU", "For a year I managed the DevOps team at Hackerspace NTNU. I got into the role after one semester. I had responsibility for the development lifecycle, server infrastructure and the team's well-being. When I became deputy leader of the organization, I continued working with DevOps.", "hackerspace.png", "Aug 2021", "Mar 2024", "https://hackerspace-ntnu.no", "https://github.com/hackerspace-ntnu", vec!["Django", "Docker"]),
+        create_experience("hackerspace-deputy", "Deputy Commander - Hackerspace NTNU", "The deputy commander, together with the lead and the financial manager, have the responsibility to administer the organization. This includes having equipment available for students, organizing events like the general assembly, and creating an environment for students to learn.", "hackerspace.png", "Mar 2023", "Mar 2024", "https://hackerspace-ntnu.no", "https://github.com/hackerspace-ntnu", vec![]),
+        create_experience("tihlde-index", "Programmer with TIHLDE Index", "Worked as a Back-end developer for index.", "tihlde.jpg", "Aug 2021", "Jun 2022", "https://tihlde.org", "https://github.com/tihlde/lepton", vec!["Django", "Docker"]),
+        create_experience("unchained", "Unchained router and templater", "Wanted to remove as much JavaScript from the website as possible so created a repository that this website runs on.", "unchained.png", "Mar 2024", "", "https://gutzkow.com", "https://github.com/cjgutz/unchained", vec!["rust"]),
     ]));
 
 
