@@ -182,9 +182,17 @@ impl Server {
         let a: Arc<Vec<Route>> = Arc::from(routes);
         Server { routes: a, options: ServerOptions { address: ADDRESS.to_string(), threads: 4 } }
     }
-    pub fn set_address(&mut self, address: &str) {
+
+    pub fn set_address(&mut self, address: &str) -> &mut Self {
         self.options.address = address.to_string();
+        self
     }
+
+    pub fn set_threads(&mut self, threads: u32) -> &mut Self {
+        self.options.threads = threads;
+        self
+    }
+
     pub fn listen(&self) {
         let address = TcpListener::bind(self.options.address.clone()).unwrap();
         let mut workers = Workers::new(self.options.threads);
