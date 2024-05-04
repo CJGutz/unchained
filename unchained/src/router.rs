@@ -2,7 +2,7 @@ use std::{
     collections::HashMap, io::{BufRead, BufReader, Write}, net::{TcpListener, TcpStream}, path::PathBuf, sync::Arc
 };
 
-use crate::workers::Workers;
+use crate::{error::{WebResult, Error}, workers::Workers};
 
 pub struct Request {
     pub verb: String,
@@ -116,7 +116,7 @@ fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
     Response::new(None, 404)
 }
 
-fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) {
+fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) -> WebResult<()> {
     let mut content_read = String::new();
     let mut buf_read = BufReader::new(&mut stream);
     buf_read.read_line(&mut content_read).unwrap();
@@ -124,7 +124,7 @@ fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) {
     let first_line = content_read.lines().take(1).collect::<String>();
     let (verb, path) = match first_line.split(' ').collect::<Vec<_>>()[..] {
         [verb, path, _version] => (verb, path),
-        _ => panic!("Unimplemented request handle for: {}", first_line)
+        _ => panic!("Unimplemented request handle for: '{}'", first_line)
     };
 
     let mut headers = HashMap::new();
@@ -155,14 +155,16 @@ fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) {
 
     let response = check_routes(routes, request);
 
-    stream
+    let write = stream
         .write_fmt(format_args!("HTTP/1.1 {} \r\n\r\n", response.status_code))
-        .expect("Failed to write to stream.");
+        .and_then(|_a| stream.write_all(&response.bytes.unwrap_or_default()))
+        .and_then(|_b| stream.write_all(b"\r\n"))
+        .and_then(|_c| stream.shutdown(std::net::Shutdown::Both));
 
-    stream.write_all(&response.bytes.unwrap_or(vec![])).unwrap();
-    stream.write_all(b"\r\n").unwrap();
-
-    stream.shutdown(std::net::Shutdown::Both).unwrap();
+    if write.is_err() {
+        return Err(Error::Connection("Could not write to stream.".to_string()))
+    }
+    Ok(())
 }
 
 pub struct ServerOptions {
@@ -195,13 +197,13 @@ impl Server {
 
     pub fn listen(&self) {
         let address = TcpListener::bind(self.options.address.clone()).unwrap();
-        let mut workers = Workers::new(self.options.threads);
+        let workers = Workers::new(self.options.threads);
         for stream in address.incoming() {
             match stream {
                 Ok(stream) => {
                     let routes = self.routes.clone();
                     workers.post(move || {
-                        handle_connection(stream, &routes);
+                        handle_connection(stream, &routes)
                     });
                 } ,
                 Err(_) => {

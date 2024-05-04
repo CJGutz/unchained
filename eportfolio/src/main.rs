@@ -24,6 +24,7 @@ fn handle_error(e: &Error) -> String {
         Error::InvalidParams(s) => s.to_string(),
         Error::LoadFile(s) => s.to_string(),
         Error::ParseTemplate(s) => s.to_string(),
+        Error::Connection(s) => s.to_string(),
     }
 }
 
