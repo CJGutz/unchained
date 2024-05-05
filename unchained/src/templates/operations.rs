@@ -77,7 +77,7 @@ pub fn get_template_operation(
     }
 }
 
-pub fn unwrap_n_params<const N: usize>(params: &Vec<String>) -> WebResult<[&str; N]> {
+pub fn unwrap_n_params<const N: usize>(params: &[String]) -> WebResult<[&str; N]> {
     let mut arr = [""; N];
     if params.len() != N {
         return Err(Error::InvalidParams(format!(
@@ -176,7 +176,7 @@ fn if_operation(
         },
     };
     if display_content {
-        return Ok(call.children.unwrap_or(String::new()));
+        return Ok(call.children.unwrap_or_default());
     }
     Ok(String::new())
 }
@@ -273,7 +273,7 @@ fn component_operation(
     options: &RenderOptions,
 ) -> WebResult<String> {
     let parameters = call.parameters;
-    let file_path = parameters.get(0);
+    let file_path = parameters.first();
     let file_path = match file_path {
         Some(file_path) => file_path,
         None => return Err(Error::InvalidParams("File path not specified".to_string())),
