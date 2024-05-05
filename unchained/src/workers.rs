@@ -2,7 +2,7 @@ use std::{
     collections::VecDeque,
     fmt::Debug,
     sync::{Arc, Condvar, Mutex},
-    thread::JoinHandle,
+    thread
 };
 
 /// A thread pool of workers that can execute tasks.
@@ -14,7 +14,7 @@ where
     T: FnOnce() -> Result<(), U>,
 {
     amount: u32,
-    threads: Vec<JoinHandle<()>>,
+    threads: Vec<thread::JoinHandle<()>>,
     condition_variable: Arc<(Mutex<bool>, Condvar)>,
     tasks: Arc<Mutex<VecDeque<T>>>,
 }
@@ -56,7 +56,7 @@ where
     pub fn start_thread(&mut self) {
         let tasks = self.tasks.clone();
         let condvar = self.condition_variable.clone();
-        self.threads.push(std::thread::spawn(move || loop {
+        self.threads.push(thread::spawn(move || loop {
             let (lock, cvar) = &*condvar;
             {
                 let mut ready = lock.lock().unwrap();
@@ -64,17 +64,16 @@ where
                     ready = cvar.wait(ready).unwrap();
                 }
             }
+            #[allow(unused_assignments)] // We want the tasks lock out of scope
             let mut task: Option<T> = None;
             {
                 let mut tasks = tasks.lock().unwrap();
-                if !tasks.is_empty() {
-                    task = tasks.pop_front();
-                }
+                task = tasks.pop_front();
             }
             if let Some(func) = task {
                 let result = func();
                 if let Err(e) = result {
-                    eprintln!("Error in worker: {:?}", e);
+                    eprintln!("Error in worker: {:?}\nContinuing work ...\n", e);
                 }
             }
             *lock.lock().unwrap() = false
