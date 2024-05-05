@@ -8,7 +8,6 @@ use super::{
     text_parse::{between_connected_patterns, Match},
 };
 
-
 const INSIDE_COMPONENT_OP_ID: &str = "inside_component_operation_identifier";
 
 pub fn template_operation(content: &str) -> Option<Match> {
@@ -54,7 +53,8 @@ pub fn operation_params_and_children(operation: &str) -> Option<TemplateOperatio
     childless_templ_op_call(operation)
 }
 
-pub type TemplateOperation = fn(TemplateOperationCall, &ContextMap, &RenderOptions) -> WebResult<String>;
+pub type TemplateOperation =
+    fn(TemplateOperationCall, &ContextMap, &RenderOptions) -> WebResult<String>;
 /// Example template operation
 /// ```
 /// {* if boolean {
@@ -62,7 +62,10 @@ pub type TemplateOperation = fn(TemplateOperationCall, &ContextMap, &RenderOptio
 /// }
 /// *}
 /// ```
-pub fn get_template_operation(op_name: &str, custom_operations: HashMap<&str, TemplateOperation>) -> Option<TemplateOperation> {
+pub fn get_template_operation(
+    op_name: &str,
+    custom_operations: HashMap<&str, TemplateOperation>,
+) -> Option<TemplateOperation> {
     match op_name {
         "get" => Some(attribute_operation),
         "for" => Some(for_loop_operation),
@@ -92,7 +95,7 @@ fn attribute_from_context(attribute: &str, context: &ContextMap) -> WebResult<Ct
     let splitted = attribute.split('.');
     let mut resulting_attribute = None;
     let mut new_context = context.clone();
-    
+
     let mut last = false;
     let splitted = splitted.collect::<Vec<&str>>();
     for i in 0..splitted.len() {
@@ -119,12 +122,19 @@ fn attribute_from_context(attribute: &str, context: &ContextMap) -> WebResult<Ct
         };
     }
     if resulting_attribute.is_none() {
-        return Err(Error::InvalidParams(format!("Attribute {} not found in context", attribute)));
+        return Err(Error::InvalidParams(format!(
+            "Attribute {} not found in context",
+            attribute
+        )));
     }
     Ok(resulting_attribute.unwrap())
 }
 
-fn attribute_operation(call: TemplateOperationCall, context: &ContextMap, _options: &RenderOptions) -> WebResult<String> {
+fn attribute_operation(
+    call: TemplateOperationCall,
+    context: &ContextMap,
+    _options: &RenderOptions,
+) -> WebResult<String> {
     let attribute = unwrap_n_params::<1>(&call.parameters)?[0];
     match attribute_from_context(attribute, context) {
         Ok(a) => match a {
@@ -143,7 +153,11 @@ fn attribute_operation(call: TemplateOperationCall, context: &ContextMap, _optio
     }
 }
 
-fn if_operation(call: TemplateOperationCall, context: &ContextMap, _options: &RenderOptions) -> WebResult<String> {
+fn if_operation(
+    call: TemplateOperationCall,
+    context: &ContextMap,
+    _options: &RenderOptions,
+) -> WebResult<String> {
     let first_param = unwrap_n_params::<1>(&call.parameters)?[0];
     let display_content = match first_param {
         "true" => true,
@@ -169,9 +183,9 @@ fn if_operation(call: TemplateOperationCall, context: &ContextMap, _options: &Re
 
 /// Iterates over a range from the parameters
 /// Expects three parameters: element, "in", range
-/// Range needs to be a context array 
+/// Range needs to be a context array
 /// Element is the name of the variable
-/// that changes in each iteration to the 
+/// that changes in each iteration to the
 /// next value in the range.
 /// Example:
 /// ```
@@ -180,7 +194,11 @@ fn if_operation(call: TemplateOperationCall, context: &ContextMap, _options: &Re
 ///    }
 /// *}
 /// ```
-fn for_loop_operation(call: TemplateOperationCall, context: &ContextMap, _options: &RenderOptions) -> WebResult<String> {
+fn for_loop_operation(
+    call: TemplateOperationCall,
+    context: &ContextMap,
+    _options: &RenderOptions,
+) -> WebResult<String> {
     let param_slice = unwrap_n_params::<3>(&call.parameters)?;
     let (element, range_key) = match param_slice {
         [element, "in", range] => (element, range),
@@ -213,9 +231,13 @@ fn for_loop_operation(call: TemplateOperationCall, context: &ContextMap, _option
     for item in range.iter() {
         new_context.insert(element.to_string(), (*item).clone());
         iterated_content.push_str(
-            render_html(children.clone(), Some(new_context.to_owned()), &RenderOptions::empty())
-                .unwrap()
-                .as_str(),
+            render_html(
+                children.clone(),
+                Some(new_context.to_owned()),
+                &RenderOptions::empty(),
+            )
+            .unwrap()
+            .as_str(),
         );
     }
     Ok(iterated_content)
@@ -245,7 +267,11 @@ fn for_loop_operation(call: TemplateOperationCall, context: &ContextMap, _option
 /// </div>
 /// ```
 ///
-fn component_operation(call: TemplateOperationCall, context: &ContextMap, options: &RenderOptions) -> WebResult<String> {
+fn component_operation(
+    call: TemplateOperationCall,
+    context: &ContextMap,
+    options: &RenderOptions,
+) -> WebResult<String> {
     let parameters = call.parameters;
     let file_path = parameters.get(0);
     let file_path = match file_path {
@@ -319,7 +345,11 @@ fn component_operation(call: TemplateOperationCall, context: &ContextMap, option
 /// </div>
 /// ```
 ///
-fn slot(call: TemplateOperationCall, context: &ContextMap, _options: &RenderOptions) -> WebResult<String> {
+fn slot(
+    call: TemplateOperationCall,
+    context: &ContextMap,
+    _options: &RenderOptions,
+) -> WebResult<String> {
     let slot_name = unwrap_n_params::<1>(&call.parameters)?[0];
     if let Some(Ctx::Leaf(Bool(inside_component))) = context.get(INSIDE_COMPONENT_OP_ID) {
         if !inside_component {
@@ -339,6 +369,10 @@ fn slot(call: TemplateOperationCall, context: &ContextMap, _options: &RenderOpti
 /// ```
 /// {* comment Any information to not render *}
 /// ```
-fn comment_operation(_call: TemplateOperationCall, _context: &ContextMap, _options: &RenderOptions) -> WebResult<String> {
+fn comment_operation(
+    _call: TemplateOperationCall,
+    _context: &ContextMap,
+    _options: &RenderOptions,
+) -> WebResult<String> {
     Ok(String::new())
 }

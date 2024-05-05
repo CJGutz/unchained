@@ -1,18 +1,29 @@
-use std::{collections::VecDeque, fmt::Debug, sync::{Arc, Condvar, Mutex}, thread::JoinHandle};
+use std::{
+    collections::VecDeque,
+    fmt::Debug,
+    sync::{Arc, Condvar, Mutex},
+    thread::JoinHandle,
+};
 
 /// A thread pool of workers that can execute tasks.
 /// Use `Workers::new(amount)` to create a new group
 /// of workers. Add new tasks with
 /// `workers.post(task)`.
-pub struct Workers<T, U> where T: FnOnce() -> Result<(), U> {
+pub struct Workers<T, U>
+where
+    T: FnOnce() -> Result<(), U>,
+{
     amount: u32,
     threads: Vec<JoinHandle<()>>,
     condition_variable: Arc<(Mutex<bool>, Condvar)>,
     tasks: Arc<Mutex<VecDeque<T>>>,
 }
 
-impl<T, U> Workers<T, U> where T: FnOnce() -> Result<(), U> + Send + 'static, U: Debug {
-
+impl<T, U> Workers<T, U>
+where
+    T: FnOnce() -> Result<(), U> + Send + 'static,
+    U: Debug,
+{
     /// Create a new group of workers.
     /// Also starts waiting for tasks.
     /// Example:
@@ -43,34 +54,31 @@ impl<T, U> Workers<T, U> where T: FnOnce() -> Result<(), U> + Send + 'static, U:
     }
 
     pub fn start_thread(&mut self) {
-            let tasks = self.tasks.clone();
-            let condvar = self.condition_variable.clone();
-            self.threads.push(std::thread::spawn(move || {
-                loop {
-                    let (lock, cvar) = &*condvar;
-                    {
-                        let mut ready = lock.lock().unwrap();
-                        while !*ready {
-                            ready = cvar.wait(ready).unwrap();
-                        }
-
-                    }
-                    let mut task: Option<T> = None;
-                    {
-                        let mut tasks = tasks.lock().unwrap();
-                        if !tasks.is_empty() {
-                            task = tasks.pop_front();
-                        }
-                    }
-                    if let Some(func) = task {
-                        let result = func();
-                        if let Err(e) = result {
-                            eprintln!("Error in worker: {:?}", e);
-                        }
-                    }
-                    *lock.lock().unwrap() = false
+        let tasks = self.tasks.clone();
+        let condvar = self.condition_variable.clone();
+        self.threads.push(std::thread::spawn(move || loop {
+            let (lock, cvar) = &*condvar;
+            {
+                let mut ready = lock.lock().unwrap();
+                while !*ready {
+                    ready = cvar.wait(ready).unwrap();
                 }
-            }));
+            }
+            let mut task: Option<T> = None;
+            {
+                let mut tasks = tasks.lock().unwrap();
+                if !tasks.is_empty() {
+                    task = tasks.pop_front();
+                }
+            }
+            if let Some(func) = task {
+                let result = func();
+                if let Err(e) = result {
+                    eprintln!("Error in worker: {:?}", e);
+                }
+            }
+            *lock.lock().unwrap() = false
+        }));
     }
 
     /// Run the workers and be ready to execute tasks.
@@ -79,5 +87,4 @@ impl<T, U> Workers<T, U> where T: FnOnce() -> Result<(), U> + Send + 'static, U:
             self.start_thread();
         }
     }
-
 }

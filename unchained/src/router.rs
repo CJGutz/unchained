@@ -1,8 +1,15 @@
 use std::{
-    collections::HashMap, io::{BufRead, BufReader, Write}, net::{TcpListener, TcpStream}, path::PathBuf, sync::Arc
+    collections::HashMap,
+    io::{BufRead, BufReader, Write},
+    net::{TcpListener, TcpStream},
+    path::PathBuf,
+    sync::Arc,
 };
 
-use crate::{error::{WebResult, Error}, workers::Workers};
+use crate::{
+    error::{Error, WebResult},
+    workers::Workers,
+};
 
 pub struct Request {
     pub verb: String,
@@ -124,7 +131,7 @@ fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) -> WebResult<()
     let first_line = content_read.lines().take(1).collect::<String>();
     let (verb, path) = match first_line.split(' ').collect::<Vec<_>>()[..] {
         [verb, path, _version] => (verb, path),
-        _ => panic!("Unimplemented request handle for: '{}'", first_line)
+        _ => panic!("Unimplemented request handle for: '{}'", first_line),
     };
 
     let mut headers = HashMap::new();
@@ -162,7 +169,7 @@ fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) -> WebResult<()
         .and_then(|_c| stream.shutdown(std::net::Shutdown::Both));
 
     if write.is_err() {
-        return Err(Error::Connection("Could not write to stream.".to_string()))
+        return Err(Error::Connection("Could not write to stream.".to_string()));
     }
     Ok(())
 }
@@ -182,7 +189,13 @@ pub struct Server {
 impl Server {
     pub fn new(routes: Vec<Route>) -> Server {
         let a: Arc<Vec<Route>> = Arc::from(routes);
-        Server { routes: a, options: ServerOptions { address: ADDRESS.to_string(), threads: 4 } }
+        Server {
+            routes: a,
+            options: ServerOptions {
+                address: ADDRESS.to_string(),
+                threads: 4,
+            },
+        }
     }
 
     pub fn set_address(&mut self, address: &str) -> &mut Self {
@@ -202,10 +215,8 @@ impl Server {
             match stream {
                 Ok(stream) => {
                     let routes = self.routes.clone();
-                    workers.post(move || {
-                        handle_connection(stream, &routes)
-                    });
-                } ,
+                    workers.post(move || handle_connection(stream, &routes));
+                }
                 Err(_) => {
                     println!("Could not handle tcp connection.");
                 }
@@ -213,4 +224,3 @@ impl Server {
         }
     }
 }
-

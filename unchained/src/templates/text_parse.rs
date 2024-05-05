@@ -301,7 +301,6 @@ mod tests {
         assert_eq!(res.to, 170);
     }
 
-
     #[test]
     fn test_equal_open_and_closing_pattern() {
         let content = "content | with a pattern and | another pattern |";

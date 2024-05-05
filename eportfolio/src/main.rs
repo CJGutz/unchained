@@ -4,7 +4,8 @@ use unchained::{
     error::Error,
     router::{HTTPVerb::*, ResponseContent, Route, Server},
     templates::{
-        context::{ctx_map, ctx_str, ctx_vec, ContextTree, Primitive}, render::{load_template, RenderOptions}
+        context::{ctx_map, ctx_str, ctx_vec, ContextTree, Primitive},
+        render::{load_template, RenderOptions},
     },
 };
 
@@ -28,15 +29,24 @@ fn handle_error(e: &Error) -> String {
     }
 }
 
-fn create_skill(id: &str, name: &str, description: &str, score: isize, image_path: &str) -> ContextTree {
+fn create_skill(
+    id: &str,
+    name: &str,
+    description: &str,
+    score: isize,
+    image_path: &str,
+) -> ContextTree {
     ctx_map([
-            ("id", ctx_str(id)),
-            ("name", ctx_str(name)),
-            ("description", ctx_str(description)),
-            ("score", ContextTree::Leaf(Primitive::Num(score))),
-            ("image", ctx_str(image_path)),
-            ("percentage", ContextTree::Leaf(Primitive::Num(score * 100 / 5))),
-        ])
+        ("id", ctx_str(id)),
+        ("name", ctx_str(name)),
+        ("description", ctx_str(description)),
+        ("score", ContextTree::Leaf(Primitive::Num(score))),
+        ("image", ctx_str(image_path)),
+        (
+            "percentage",
+            ContextTree::Leaf(Primitive::Num(score * 100 / 5)),
+        ),
+    ])
 }
 
 fn create_experience(
@@ -51,16 +61,16 @@ fn create_experience(
     tech: Vec<&str>,
 ) -> ContextTree {
     ctx_map([
-            ("id", ctx_str(id)),
-            ("title", ctx_str(title)),
-            ("description", ctx_str(description)),
-            ("image", ctx_str(image_path)),
-            ("date_start", ctx_str(date_start)),
-            ("date_end", ctx_str(date_end)),
-            ("demo_link", ctx_str(demo_link)),
-            ("source_link", ctx_str(source_link)),
-            ("tech", ctx_vec(tech.iter().map(|t| ctx_str(t)).collect())),
-        ])
+        ("id", ctx_str(id)),
+        ("title", ctx_str(title)),
+        ("description", ctx_str(description)),
+        ("image", ctx_str(image_path)),
+        ("date_start", ctx_str(date_start)),
+        ("date_end", ctx_str(date_end)),
+        ("demo_link", ctx_str(demo_link)),
+        ("source_link", ctx_str(source_link)),
+        ("tech", ctx_vec(tech.iter().map(|t| ctx_str(t)).collect())),
+    ])
 }
 
 fn main() {
@@ -69,22 +79,30 @@ fn main() {
     let mut context_experience = HashMap::new();
 
     let current_year: isize = current_year().try_into().unwrap();
-    context_landing.insert("current_year".to_string(), ContextTree::Leaf(Primitive::Num(current_year)));
-    context_skills.insert("current_year".to_string(), ContextTree::Leaf(Primitive::Num(current_year)));
-    context_experience.insert("current_year".to_string(), ContextTree::Leaf(Primitive::Num(current_year)));
+    context_landing.insert(
+        "current_year".to_string(),
+        ContextTree::Leaf(Primitive::Num(current_year)),
+    );
+    context_skills.insert(
+        "current_year".to_string(),
+        ContextTree::Leaf(Primitive::Num(current_year)),
+    );
+    context_experience.insert(
+        "current_year".to_string(),
+        ContextTree::Leaf(Primitive::Num(current_year)),
+    );
 
     let page_links = ctx_vec(vec![
-            ctx_map([("href", ctx_str("/#about")), ("label", ctx_str("About me"))]),
-            ctx_map([
-                ("href", ctx_str("/experience")),
-                ("label", ctx_str("Experience")),
-            ]),
-            ctx_map([("href", ctx_str("/skills")), ("label", ctx_str("Skills"))]),
-        ]);
+        ctx_map([("href", ctx_str("/#about")), ("label", ctx_str("About me"))]),
+        ctx_map([
+            ("href", ctx_str("/experience")),
+            ("label", ctx_str("Experience")),
+        ]),
+        ctx_map([("href", ctx_str("/skills")), ("label", ctx_str("Skills"))]),
+    ]);
     context_landing.insert("page_links".to_string(), page_links.clone());
     context_skills.insert("page_links".to_string(), page_links.clone());
     context_experience.insert("page_links".to_string(), page_links);
-
 
     context_landing.insert(
         "carl_images".to_string(),
@@ -124,11 +142,22 @@ fn main() {
         create_experience("tihlde-index", "Programmer with TIHLDE Index", "Worked as a Back-end developer for index.", "tihlde.jpg", "Aug 2021", "Jun 2022", "https://tihlde.org", "https://github.com/tihlde/lepton", vec!["Django", "Docker"]),
     ]));
 
-
     let start = std::time::Instant::now();
-    let landing = load_template("templates/landing.html", Some(context_landing), &RenderOptions::empty());
-    let skills = load_template("templates/skills.html", Some(context_skills), &RenderOptions::empty());
-    let experience = load_template("templates/experience.html", Some(context_experience), &RenderOptions::empty());
+    let landing = load_template(
+        "templates/landing.html",
+        Some(context_landing),
+        &RenderOptions::empty(),
+    );
+    let skills = load_template(
+        "templates/skills.html",
+        Some(context_skills),
+        &RenderOptions::empty(),
+    );
+    let experience = load_template(
+        "templates/experience.html",
+        Some(context_experience),
+        &RenderOptions::empty(),
+    );
     let duration = start.elapsed();
     println!("Finished rendering after {} s", duration.as_secs_f64());
 
@@ -158,9 +187,21 @@ fn main() {
             }),
         ),
         Route::new(GET, "/images/*", ResponseContent::FolderAccess),
-        Route::new(GET, "/Poppins/Poppins-Regular.ttf", ResponseContent::Bytes(std::fs::read("Poppins/Poppins-Regular.ttf").unwrap())),
-        Route::new(GET, "/favicon.ico", ResponseContent::Bytes(std::fs::read("favicon.ico").unwrap())),
-        Route::new(GET, "/cv.pdf", ResponseContent::Bytes(std::fs::read("cv.pdf").unwrap())),
+        Route::new(
+            GET,
+            "/Poppins/Poppins-Regular.ttf",
+            ResponseContent::Bytes(std::fs::read("Poppins/Poppins-Regular.ttf").unwrap()),
+        ),
+        Route::new(
+            GET,
+            "/favicon.ico",
+            ResponseContent::Bytes(std::fs::read("favicon.ico").unwrap()),
+        ),
+        Route::new(
+            GET,
+            "/cv.pdf",
+            ResponseContent::Bytes(std::fs::read("cv.pdf").unwrap()),
+        ),
     ];
     let server = Server::new(routes);
     server.listen();

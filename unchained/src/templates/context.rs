@@ -44,14 +44,25 @@ impl ToString for Primitive {
     }
 }
 
-
 impl Display for ContextTree {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let children = match self {
             ContextTree::Leaf(p) => p.to_string(),
-            ContextTree::Array(a) => format!("[ \n\t{}\n ]", a.iter().map(|i| i.to_string()).collect::<Vec<_>>().join(",\n\t")),
+            ContextTree::Array(a) => format!(
+                "[ \n\t{}\n ]",
+                a.iter()
+                    .map(|i| i.to_string())
+                    .collect::<Vec<_>>()
+                    .join(",\n\t")
+            ),
             ContextTree::Slot(p) => p.to_string(),
-            ContextTree::Branch(b) => format!("{{ {} }}", b.iter().map(|(k, v)| format!("{}: {}", k, v)).collect::<Vec<_>>().join(", ")),
+            ContextTree::Branch(b) => format!(
+                "{{ {} }}",
+                b.iter()
+                    .map(|(k, v)| format!("{}: {}", k, v))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
         };
         f.write_str(&children)
     }
