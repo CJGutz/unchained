@@ -1,4 +1,5 @@
 use std::{
+    borrow::Borrow,
     collections::HashMap,
     io::{BufRead, BufReader, Write},
     net::{TcpListener, TcpStream},
@@ -42,6 +43,7 @@ impl ToString for HTTPVerb {
 pub struct Response {
     pub bytes: Option<Vec<u8>>,
     pub status_code: u32,
+    pub headers: HashMap<String, String>,
 }
 
 impl Response {
@@ -49,13 +51,20 @@ impl Response {
         Response {
             bytes: content.map(|s| s.as_bytes().to_vec()),
             status_code,
+            headers: HashMap::new(),
         }
     }
     pub fn new_200(content: String) -> Response {
         Response {
             bytes: Some(content.as_bytes().to_vec()),
             status_code: 200,
+            headers: HashMap::new(),
         }
+    }
+
+    pub fn add_header(&mut self, key: &str, value: &str) -> &mut Self {
+        self.headers.insert(key.to_string(), value.to_string());
+        self
     }
 }
 
@@ -70,6 +79,7 @@ pub struct Route {
     pub verb: HTTPVerb,
     pub path: String,
     pub response: ResponseContent,
+    pub returned_headers: HashMap<String, String>,
 }
 
 impl Route {
@@ -78,6 +88,21 @@ impl Route {
             verb,
             path: path.to_string(),
             response,
+            returned_headers: HashMap::new(),
+        }
+    }
+
+    pub fn new_with_headers(
+        verb: HTTPVerb,
+        path: &str,
+        response: ResponseContent,
+        headers: HashMap<String, String>,
+    ) -> Route {
+        Route {
+            verb,
+            path: path.to_string(),
+            response,
+            returned_headers: headers,
         }
     }
 }
@@ -88,6 +113,7 @@ fn read_file_to_respond(file: &str) -> Response {
     Response {
         bytes: file.clone(),
         status_code: if file.is_some() { 200 } else { 404 },
+        headers: HashMap::new(),
     }
 }
 
@@ -113,6 +139,7 @@ fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
                     return Response {
                         bytes: Some(b.to_vec()),
                         status_code: 200,
+                        headers: HashMap::new(),
                     }
                 }
                 ResponseContent::FromRequest(f) => return f(request),
@@ -123,7 +150,11 @@ fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
     Response::new(None, 404)
 }
 
-fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) -> WebResult<()> {
+fn handle_connection(
+    mut stream: TcpStream,
+    routes: &Vec<Route>,
+    options: &ServerOptions,
+) -> WebResult<()> {
     let mut content_read = String::new();
     let mut buf_read = BufReader::new(&mut stream);
     buf_read.read_line(&mut content_read).unwrap();
@@ -167,8 +198,19 @@ fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) -> WebResult<()
 
     let response = check_routes(routes, request);
 
+    let headers = options
+        .default_headers
+        .iter()
+        .chain(response.headers.iter())
+        .map(|(k, v)| format!("{}: {}", k, v))
+        .collect::<Vec<String>>()
+        .join("\r\n");
+
     let write = stream
-        .write_fmt(format_args!("HTTP/1.1 {} \r\n\r\n", response.status_code))
+        .write_fmt(format_args!(
+            "HTTP/1.1 {}\r\n{}\r\n\r\n",
+            response.status_code, headers
+        ))
         .and_then(|_a| stream.write_all(&response.bytes.unwrap_or_default()))
         .and_then(|_b| stream.write_all(b"\r\n"))
         .and_then(|_c| stream.shutdown(std::net::Shutdown::Both));
@@ -179,9 +221,11 @@ fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) -> WebResult<()
     Ok(())
 }
 
+#[derive(Clone)]
 pub struct ServerOptions {
     pub address: String,
     pub threads: u32,
+    pub default_headers: HashMap<String, String>,
 }
 
 const ADDRESS: &str = "0.0.0.0:8080";
@@ -199,6 +243,7 @@ impl Server {
             options: ServerOptions {
                 address: ADDRESS.to_string(),
                 threads: 4,
+                default_headers: HashMap::new(),
             },
         }
     }
@@ -213,6 +258,13 @@ impl Server {
         self
     }
 
+    pub fn add_default_header(&mut self, key: &str, value: &str) -> &mut Self {
+        self.options
+            .default_headers
+            .insert(key.to_string(), value.to_string());
+        self
+    }
+
     pub fn listen(&self) {
         let address = TcpListener::bind(self.options.address.clone()).unwrap();
         let workers = Workers::new(self.options.threads);
@@ -220,7 +272,8 @@ impl Server {
             match stream {
                 Ok(stream) => {
                     let routes = self.routes.clone();
-                    workers.post(move || handle_connection(stream, &routes));
+                    let options = self.options.clone();
+                    workers.post(move || handle_connection(stream, &routes, &options));
                 }
                 Err(_) => {
                     println!("Could not handle tcp connection.");

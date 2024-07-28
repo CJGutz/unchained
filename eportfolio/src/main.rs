@@ -204,6 +204,7 @@ fn main() {
         ),
         Route::new(GET, "/templates/css/*", ResponseContent::FolderAccess),
     ];
-    let server = Server::new(routes);
+    let mut server = Server::new(routes);
+    server.add_default_header("Cache-Control", "max-age=300");
     server.listen();
 }
