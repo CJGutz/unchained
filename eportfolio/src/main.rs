@@ -203,6 +203,11 @@ fn main() {
             ResponseContent::Bytes(std::fs::read("cv.pdf").unwrap()),
         ),
         Route::new(GET, "/templates/css/*", ResponseContent::FolderAccess),
+        Route::new(
+            GET,
+            "/*",
+            ResponseContent::Str("404! Are you trying to sneek around?".to_string()),
+        ),
     ];
     let mut server = Server::new(routes);
     server.add_default_header("Cache-Control", "max-age=300");

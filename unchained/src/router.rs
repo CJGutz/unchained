@@ -126,22 +126,16 @@ fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
             .trim_start_matches('/');
         let req_path = request.path.trim_end_matches('/').trim_start_matches('/');
 
-        if route.path.ends_with('*')
-            && req_path.starts_with(route_path)
-            && matches!(route.response, ResponseContent::FolderAccess)
-        {
-            return read_file_to_respond(req_path);
-        } else if route_verb == request.verb && route_path == req_path {
-            match &route.response {
-                ResponseContent::Str(s) => return Response::new_200(s.to_string()),
-                ResponseContent::Bytes(b) => {
-                    return Response {
-                        bytes: Some(b.to_vec()),
-                        status_code: 200,
-                        headers: HashMap::new(),
-                    }
-                }
-                ResponseContent::FromRequest(f) => return f(request),
+        let star_access = route.path.ends_with('*') && req_path.starts_with(route_path);
+        if route_verb == request.verb && (route_path == req_path || star_access) {
+            return match &route.response {
+                ResponseContent::Str(s) => Response::new_200(s.to_string()),
+                ResponseContent::Bytes(b) => Response {
+                    bytes: Some(b.to_vec()),
+                    status_code: 200,
+                    headers: HashMap::new(),
+                },
+                ResponseContent::FromRequest(f) => f(request),
                 ResponseContent::FolderAccess => read_file_to_respond(req_path),
             };
         }
