@@ -126,12 +126,12 @@ fn main() {
         create_skill("django", "Django", "I have used Django in various projects in Index, Hackerspace, and Ei Solutions. It has been my Go To framework for backend developement because of its simplicity, scalability, and effeciency.", 5, "django.png"),
         create_skill("java", "Java", "Java was used extensively at NTNU and was often required for school projects with Spring Boot, Maven and more.", 5, "java.png"),
         create_skill("docker", "Docker", "I have used docker in several projects with Index, Hackerspace, and Ei Solutions. It has been very useful in both development and deployment. Yet, it is incredibly complex to master. My skill with Docker centers around using Compose and creating Dockerfiles.", 4, "docker.png"),
-        create_skill("python", "Python", "Python was my my first introduction to programming with a clear goal in mind. It has been used in my projects with Django. It was also used in the CS50-AI course with Tensorflow.", 4, "python.svg"),
-        create_skill("typescript", "Type Script", "TypeScript has been used in all Front end projects. In high school, I was introduced to JavaScript, but after learning TypeScript, I have understood that I can never go back", 4, "typescript.svg"),
+        create_skill("python", "Python", "Python was my my first introduction to programming with a clear goal in mind. It has been used in my projects with Django. It was also used in the CS50-AI course with Tensorflow.", 4, "python.png"),
+        create_skill("typescript", "Type Script", "TypeScript has been used in all Front end projects. In high school, I was introduced to JavaScript, but after learning TypeScript, I have understood that I can never go back", 4, "typescript.png"),
         create_skill("next", "Next", "This SSR framework was used to build my bachelor thesis product in addition to the landing page for Ei Solutions.", 3, "next.png"),
         create_skill("postgis", "PostGIS", "This Postgres extension has been used to store and query spatial data in Ei Solutions. Postgres with PostGIS is by far the best relational geospatial database.", 3, "postgis.png"),
         create_skill("qgis", "QGIS", "In Ei Solutions, I used QGIS to pre-process datasets before storing them in a PostGIS database.", 3, "qgis.png"),
-        create_skill("rust", "Rust", "I enjoy writing in this language and have created some fun projects with it, including this website.", 2, "rust.svg"),
+        create_skill("rust", "Rust", "I enjoy writing in this language and have created some fun projects with it, including this website.", 2, "rust.png"),
     ]));
 
     context_experience.insert("experience_list".to_string(), ctx_vec(vec![
@@ -202,6 +202,7 @@ fn main() {
             "/cv.pdf",
             ResponseContent::Bytes(std::fs::read("cv.pdf").unwrap()),
         ),
+        Route::new(GET, "/templates/css/*", ResponseContent::FolderAccess)
     ];
     let server = Server::new(routes);
     server.listen();

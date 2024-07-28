@@ -719,6 +719,10 @@ video {
   display: grid;
 }
 
+.hidden {
+  display: none;
+}
+
 .h-0 {
   height: 0px;
 }
@@ -1224,12 +1228,12 @@ html > * {
 }
 
 a,
-      button {
+button {
   transition: all 300ms ease-in-out;
 }
 
 a:hover,
-      button:hover {
+button:hover {
   cursor: pointer;
   opacity: 0.8;
 }

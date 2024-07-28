@@ -17,7 +17,8 @@
           for (let i = 0; i < mobileMenuClasses.length; i++) {
             menuEl.classList.toggle(mobileMenuClasses[i]);
           }
-          document.getElementById("mobile-menu-image").setAttribute("src", `/images/icons/${mobileMenuOpen ? 'cross' : 'hamburger'}.svg`)
+          const hamburgerEl = document.getElementById("hamburger-icon").classList.toggle("hidden")
+          const crossEl = document.getElementById("cross-icon").classList.toggle("hidden")
         }
 
       </script>
@@ -27,8 +28,13 @@
             <div class="flex items-center justify-between">
               <div class="z-20"><a class="text-2xl font-bold text-gray-800 hover:text-gray-700 lg:text-3xl" href="/">Carl Gützkow</a></div>
               <div class="flex lg:hidden">
-                <button class="text-gray-500 hover:text-gray-600 z-30" aria-label="toggle menu" onclick="toggleMenu(!menuOpen); menuOpen = !menuOpen">
-                  <img id="mobile-menu-image" alt="Hamburger Menu" src="/images/icons/hamburger.svg" width="24" height="24" decoding="async" data-nimg="1" loading="lazy" style="color:transparent"></button>
+                <button class="text-gray-900 hover:text-gray-600 z-30" aria-label="toggle menu" onclick="toggleMenu(!menuOpen); menuOpen = !menuOpen">
+                  <div id="hamburger-icon">
+                    {* component images/icons/hamburger.svg *}
+                  </div>
+                  <div id="cross-icon" class="hidden">
+                    {* component images/icons/cross.svg *}
+                  </div>
               </div>
             </div>
             <div class="opacity-0 -translate-y-full h-0 inset-x-0 w-full bg-transparent px-6 py-4 shadow-md transition-all duration-200 ease-in-out lg:relative lg:top-0 lg:mt-0 lg:flex lg:w-auto lg:translate-y-0 lg:items-center lg:bg-transparent lg:p-0 lg:opacity-100 lg:shadow-none" id="menu-links">
