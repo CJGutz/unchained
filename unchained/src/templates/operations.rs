@@ -278,7 +278,11 @@ fn component_operation(
         Some(file_path) => file_path,
         None => return Err(Error::InvalidParams("File path not specified".to_string())),
     };
-    if !file_path.ends_with(".html") && !file_path.ends_with(".svg") && !file_path.ends_with(".js") && !file_path.ends_with(".css") {
+    if !file_path.ends_with(".html")
+        && !file_path.ends_with(".svg")
+        && !file_path.ends_with(".js")
+        && !file_path.ends_with(".css")
+    {
         return Err(Error::InvalidParams("Invalid file path".to_string()));
     }
     let mut new_context = context.clone();

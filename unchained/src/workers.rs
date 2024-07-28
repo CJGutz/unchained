@@ -2,7 +2,7 @@ use std::{
     collections::VecDeque,
     fmt::Debug,
     sync::{Arc, Condvar, Mutex},
-    thread
+    thread,
 };
 
 /// A thread pool of workers that can execute tasks.

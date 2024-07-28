@@ -131,7 +131,12 @@ fn handle_connection(mut stream: TcpStream, routes: &Vec<Route>) -> WebResult<()
     let first_line = content_read.lines().take(1).collect::<String>();
     let (verb, path) = match first_line.split(' ').collect::<Vec<_>>()[..] {
         [verb, path, _version] => (verb, path),
-        _ => return Err(Error::Connection(format!("Unimplemented request handle for: '{}", first_line))),
+        _ => {
+            return Err(Error::Connection(format!(
+                "Unimplemented request handle for: '{}",
+                first_line
+            )))
+        }
     };
 
     let mut headers = HashMap::new();

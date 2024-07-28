@@ -202,7 +202,7 @@ fn main() {
             "/cv.pdf",
             ResponseContent::Bytes(std::fs::read("cv.pdf").unwrap()),
         ),
-        Route::new(GET, "/templates/css/*", ResponseContent::FolderAccess)
+        Route::new(GET, "/templates/css/*", ResponseContent::FolderAccess),
     ];
     let server = Server::new(routes);
     server.listen();
