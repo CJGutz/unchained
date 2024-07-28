@@ -202,6 +202,11 @@ fn main() {
             "/cv.pdf",
             ResponseContent::Bytes(std::fs::read("cv.pdf").unwrap()),
         ),
+        Route::new(
+            GET,
+            "/robots.txt",
+            ResponseContent::Bytes(std::fs::read("robots.txt").unwrap()),
+        ),
         Route::new(GET, "/templates/css/*", ResponseContent::FolderAccess),
         Route::new(
             GET,
