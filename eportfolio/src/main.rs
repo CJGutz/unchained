@@ -75,19 +75,9 @@ fn create_experience(
 
 fn main() {
     let mut context_landing = HashMap::new();
-    let mut context_skills = HashMap::new();
-    let mut context_experience = HashMap::new();
 
     let current_year: isize = current_year().try_into().unwrap();
     context_landing.insert(
-        "current_year".to_string(),
-        ContextTree::Leaf(Primitive::Num(current_year)),
-    );
-    context_skills.insert(
-        "current_year".to_string(),
-        ContextTree::Leaf(Primitive::Num(current_year)),
-    );
-    context_experience.insert(
         "current_year".to_string(),
         ContextTree::Leaf(Primitive::Num(current_year)),
     );
@@ -101,8 +91,10 @@ fn main() {
         ctx_map([("href", ctx_str("/skills")), ("label", ctx_str("Skills"))]),
     ]);
     context_landing.insert("page_links".to_string(), page_links.clone());
-    context_skills.insert("page_links".to_string(), page_links.clone());
-    context_experience.insert("page_links".to_string(), page_links);
+
+    let mut context_skills = context_landing.clone();
+    let mut context_experience = context_landing.clone();
+    let context_404 = context_landing.clone();
 
     context_landing.insert(
         "carl_images".to_string(),
@@ -158,6 +150,11 @@ fn main() {
         Some(context_experience),
         &RenderOptions::empty(),
     );
+    let page_404 = load_template(
+        "templates/404.html",
+        Some(context_404),
+        &RenderOptions::empty(),
+    );
     let duration = start.elapsed();
     println!("Finished rendering after {} s", duration.as_secs_f64());
 
@@ -211,7 +208,10 @@ fn main() {
         Route::new(
             GET,
             "/*",
-            ResponseContent::Str("404! Are you trying to sneek around?".to_string()),
+            ResponseContent::Str(match &page_404 {
+                Ok(template) => template.to_string(),
+                Err(e) => handle_error(e),
+            }),
         ),
     ];
     let mut server = Server::new(routes);
