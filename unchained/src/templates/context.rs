@@ -34,12 +34,12 @@ impl ContextTree {
     }
 }
 
-impl ToString for Primitive {
-    fn to_string(&self) -> String {
+impl Display for Primitive {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Primitive::Str(a) => a.to_string(),
-            Primitive::Num(a) => a.to_string(),
-            Primitive::Bool(a) => a.to_string(),
+            Primitive::Str(s) => f.write_str(s),
+            Primitive::Num(n) => f.write_str(&n.to_string()),
+            Primitive::Bool(b) => f.write_str(&b.to_string()),
         }
     }
 }
