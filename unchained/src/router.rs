@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    fmt::Display,
     io::{BufRead, BufReader, Write},
     net::{TcpListener, TcpStream},
     path::PathBuf,
@@ -26,16 +27,15 @@ pub enum HTTPVerb {
     HEAD,
 }
 
-impl ToString for HTTPVerb {
-    fn to_string(&self) -> String {
+impl Display for HTTPVerb {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            HTTPVerb::GET => "GET",
-            HTTPVerb::POST => "POST",
-            HTTPVerb::UPDATE => "UPDATE",
-            HTTPVerb::DELETE => "DELETE",
-            HTTPVerb::HEAD => "HEAD",
+            HTTPVerb::GET => write!(f, "GET"),
+            HTTPVerb::POST => write!(f, "POST"),
+            HTTPVerb::UPDATE => write!(f, "UPDATE"),
+            HTTPVerb::DELETE => write!(f, "DELETE"),
+            HTTPVerb::HEAD => write!(f, "HEAD"),
         }
-        .to_string()
     }
 }
 

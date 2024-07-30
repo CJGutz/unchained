@@ -326,8 +326,8 @@ mod tests {
     #[test]
     fn find_replace_with_several_code_points() {
         let mut content = String::from("åüåå[cåüååontent]");
-        let res1 = content.find("[").unwrap();
-        let res2 = content.find("]").unwrap();
+        let res1 = content.find('[').unwrap();
+        let res2 = content.find(']').unwrap();
         content.replace_range(res1 + 1..res2, "bruh");
         assert_eq!(content, "åüåå[bruh]");
     }
