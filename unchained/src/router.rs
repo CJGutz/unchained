@@ -150,15 +150,19 @@ fn handle_connection(
 ) -> WebResult<()> {
     let mut content_read = String::new();
     let mut buf_read = BufReader::new(&mut stream);
-    buf_read.read_line(&mut content_read).unwrap();
+    let res = buf_read.read_line(&mut content_read);
+    if res.is_err() {
+        return Err(Error::Connection(
+            "Could not read from stream. Invalid buffer.".to_string(),
+        ));
+    }
 
-    let first_line = content_read.lines().take(1).collect::<String>();
-    let (verb, path) = match first_line.split(' ').collect::<Vec<_>>()[..] {
+    let (verb, path) = match content_read.split(' ').collect::<Vec<_>>()[..] {
         [verb, path, _version] => (verb, path),
         _ => {
             return Err(Error::Connection(format!(
                 "Unimplemented request handle for: '{}",
-                first_line
+                content_read
             )))
         }
     };
@@ -167,7 +171,12 @@ fn handle_connection(
 
     loop {
         let mut content_read = String::new();
-        buf_read.read_line(&mut content_read).unwrap();
+        let res = buf_read.read_line(&mut content_read);
+        if res.is_err() {
+            return Err(Error::Connection(
+                "Could not read from stream. Invalid buffer.".to_string(),
+            ));
+        }
         match content_read
             .trim()
             .split(": ")
