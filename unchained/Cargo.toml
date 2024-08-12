@@ -1,4 +1,12 @@
 [package]
 name = "unchained"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
+authors = ["Carl Gützkow"]
+description = "Simple router and template renderer."
+repository = "https://github.com/cjgutz/unchained"
+keywords = ["router", "templates"]
+categories = ["web-programming::http-server"]
+license = "MIT"
+readme = "../README.md"
+
