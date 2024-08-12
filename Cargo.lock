@@ -6,9 +6,9 @@ version = 3
 name = "eportfolio"
 version = "0.1.0"
 dependencies = [
- "unchained",
+ "unchained_web",
 ]
 
 [[package]]
-name = "unchained"
-version = "0.1.0"
+name = "unchained_web"
+version = "0.1.1"

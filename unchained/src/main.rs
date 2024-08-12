@@ -1,4 +1,4 @@
-use unchained::router::Server;
+use unchained_web::router::Server;
 
 fn main() {
     let routes = vec![];

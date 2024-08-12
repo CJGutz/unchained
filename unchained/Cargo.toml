@@ -1,5 +1,5 @@
 [package]
-name = "unchained"
+name = "unchained_web"
 version = "0.1.1"
 edition = "2021"
 authors = ["Carl Gützkow"]
