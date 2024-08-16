@@ -24,8 +24,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
-      - run: cargo build --verbose --bin unchained
-      - run: cargo test --verbose --bin unchained
+      - run: cargo build --verbose --bin unchained_web
+      - run: cargo test --verbose --bin unchained_web
       - run: cargo build --verbose --bin eportfolio
       - run: cargo test --verbose --bin eportfolio
   lint:
