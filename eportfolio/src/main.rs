@@ -73,6 +73,10 @@ fn create_experience(
     ])
 }
 
+fn folder_access(path: &str) -> Route {
+    Route::new(GET, path, ResponseContent::FolderAccess)
+}
+
 fn main() {
     let mut context_landing = HashMap::new();
 
@@ -129,7 +133,7 @@ fn main() {
     context_experience.insert("experience_list".to_string(), ctx_vec(vec![
         create_experience("unchained", "Unchained router and templater", "Wanted to remove as much JavaScript from the website as possible so created a router and html template library that this website is created with.", "unchained.png", "Mar 2024", "", "https://gutzkow.com", "https://github.com/cjgutz/unchained", vec!["Rust", "Docker"]),
         create_experience("hackerspace-deputy", "Deputy Commander - Hackerspace NTNU", "The deputy commander, together with the lead and the financial manager, had the responsibility to administer the organization. We made equipment available for students, organized events like the general assembly, and created an environment for students to learn. The last few months, I took the lead role as the previous leader stepped down.", "hackerspace.png", "Mar 2023", "Mar 2024", "https://hackerspace-ntnu.no", "https://github.com/hackerspace-ntnu", vec![]),
-        create_experience("eisolutions", "Ei Solutions AS", "", "eisolutions.jpg", "Jun 2022", "We were two developers who created the first prototype for the application. I had responsibility for the Back end. It required managing large amounts of data inside a Postgis database. ", "https://eisolutions.no", "", vec!["Django", "PostGIS", "QGIS", "Docker"]),
+        create_experience("eisolutions", "Ei Solutions AS", "We started as two developers and a project manager who created the first prototype for an application. The application helps property developers manage a risk and vulnerability assessment of physical climate risk and biodiversity. I had responsibility for the Back-end. It required managing large amounts of data inside a Postgis database. In the summer of 2023, with more teamates, we rewrote the entire application with a higher priority on user experience. This tought me a great deal about creating applications that scale and easily adapts to changing circumstances and customers.", "eisolutions.jpg", "Jun 22", "", "https://eisolutions.no", "", vec!["Django", "PostGIS", "QGIS", "Docker"]),
         create_experience("hackerspace-devops", "DevOps Member and Team Leader - Hackerspace NTNU", "For a year I managed the DevOps team at Hackerspace NTNU. I got into the role after one semester. I had responsibility for the development lifecycle, server infrastructure and the team's well-being. When I became deputy leader of the organization, I continued working with DevOps.", "hackerspace.png", "Aug 2021", "Mar 2024", "https://hackerspace-ntnu.no", "https://github.com/hackerspace-ntnu", vec!["Django", "Docker"]),
         create_experience("tihlde-index", "Programmer with TIHLDE Index", "Worked as a Back-end developer for index.", "tihlde.jpg", "Aug 2021", "Jun 2022", "https://tihlde.org", "https://github.com/tihlde/lepton", vec!["Django", "Docker"]),
     ]));
@@ -183,28 +187,12 @@ fn main() {
                 Err(e) => handle_error(e),
             }),
         ),
-        Route::new(GET, "/images/*", ResponseContent::FolderAccess),
-        Route::new(
-            GET,
-            "/Poppins/Poppins-Regular.ttf",
-            ResponseContent::Bytes(std::fs::read("Poppins/Poppins-Regular.ttf").unwrap()),
-        ),
-        Route::new(
-            GET,
-            "/favicon.ico",
-            ResponseContent::Bytes(std::fs::read("favicon.ico").unwrap()),
-        ),
-        Route::new(
-            GET,
-            "/cv.pdf",
-            ResponseContent::Bytes(std::fs::read("cv.pdf").unwrap()),
-        ),
-        Route::new(
-            GET,
-            "/robots.txt",
-            ResponseContent::Bytes(std::fs::read("robots.txt").unwrap()),
-        ),
-        Route::new(GET, "/templates/css/*", ResponseContent::FolderAccess),
+        folder_access("/images/*"),
+        folder_access("/Poppins/Poppins-Regular.ttf"),
+        folder_access("favicon.ico"),
+        folder_access("cv.pdf"),
+        folder_access("robots.txt"),
+        folder_access("templates/css/*"),
         Route::new(
             GET,
             "/*",
