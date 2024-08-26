@@ -1,22 +1,19 @@
-use std::{
-    collections::HashMap,
-    fmt::Display,
-    io::{BufRead, BufReader, Write},
-    net::{TcpListener, TcpStream},
-    path::PathBuf,
-    sync::Arc,
-};
+use std::{collections::HashMap, fmt::Display, path::PathBuf};
 
-use crate::{
-    error::{Error, WebResult},
-    workers::Workers,
-};
-
+#[derive(Clone, Debug)]
 pub struct Request {
     pub verb: String,
     pub path: String,
+    pub path_params: Option<HashMap<String, String>>,
     pub body: Option<String>,
     pub headers: HashMap<String, String>,
+}
+
+impl Request {
+    pub fn set_path_params(&mut self, params: HashMap<String, String>) -> &mut Self {
+        self.path_params = Some(params);
+        self
+    }
 }
 
 pub enum HTTPVerb {
@@ -116,18 +113,55 @@ fn read_file_to_respond(file: &str) -> Response {
     }
 }
 
-fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
+/// Checks if the route matches the path.
+/// Finds path params in the request.
+fn compare_route_w_path_and_get_path_params(
+    route: &str,
+    req_path: &str,
+) -> (bool, HashMap<String, String>) {
+    let route_parts = route
+        .trim_start_matches('/')
+        .trim_end_matches('*')
+        .trim_end_matches('/')
+        .split('/')
+        .collect::<Vec<_>>();
+    let req_parts = req_path
+        .trim_start_matches('/')
+        .trim_end_matches('/')
+        .split('/');
+    let mut params = HashMap::new();
+    let mut match_route = true;
+    for (count, req_part) in req_parts.clone().enumerate() {
+        let route_part = route_parts.get(count);
+        if route_part.is_none() {
+            let last_is_star = route.ends_with('*');
+            match_route = last_is_star;
+            break;
+        }
+        let route_part = *route_part.unwrap();
+
+        if let Some(route_part) = route_part.strip_prefix(':') {
+            params.insert(route_part.to_string(), req_part.to_string());
+        } else if route_part != req_part {
+            match_route = false;
+            break;
+        }
+    }
+    if route_parts.len() > req_parts.count() {
+        match_route = false;
+    }
+    (match_route, params)
+}
+
+pub fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
     for route in routes {
         let route_verb = route.verb.to_string();
-        let route_path = route
-            .path
-            .trim_end_matches('/')
-            .trim_end_matches('*')
-            .trim_start_matches('/');
-        let req_path = request.path.trim_end_matches('/').trim_start_matches('/');
 
-        let star_access = route.path.ends_with('*') && req_path.starts_with(route_path);
-        if route_verb == request.verb && (route_path == req_path || star_access) {
+        let (matches, params) =
+            compare_route_w_path_and_get_path_params(&route.path, &request.path);
+        let modified_request = request.clone().set_path_params(params).to_owned();
+
+        if route_verb == request.verb && matches {
             return match &route.response {
                 ResponseContent::Str(s) => Response::new_200(s.to_string()),
                 ResponseContent::Bytes(b) => Response {
@@ -135,152 +169,62 @@ fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
                     status_code: 200,
                     headers: HashMap::new(),
                 },
-                ResponseContent::FromRequest(f) => f(request),
-                ResponseContent::FolderAccess => read_file_to_respond(req_path),
+                ResponseContent::FromRequest(f) => f(modified_request),
+                ResponseContent::FolderAccess => {
+                    read_file_to_respond(request.path.trim_start_matches('/'))
+                }
             };
         }
     }
     Response::new(None, 404)
 }
 
-fn handle_connection(
-    mut stream: TcpStream,
-    routes: &Vec<Route>,
-    options: &ServerOptions,
-) -> WebResult<()> {
-    let mut content_read = String::new();
-    let mut buf_read = BufReader::new(&mut stream);
-    let res = buf_read.read_line(&mut content_read);
-    if res.is_err() {
-        return Err(Error::Connection(
-            "Could not read from stream. Invalid buffer.".to_string(),
-        ));
-    }
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let (verb, path) = match content_read.split(' ').collect::<Vec<_>>()[..] {
-        [verb, path, _version] => (verb, path),
-        _ => {
-            return Err(Error::Connection(format!(
-                "Unimplemented request handle for: '{}",
-                content_read
-            )))
-        }
-    };
-
-    let mut headers = HashMap::new();
-
-    loop {
-        let mut content_read = String::new();
-        let res = buf_read.read_line(&mut content_read);
-        if res.is_err() {
-            return Err(Error::Connection(
-                "Could not read from stream. Invalid buffer.".to_string(),
-            ));
-        }
-        match content_read
-            .trim()
-            .split(": ")
-            .collect::<Vec<_>>()
-            .as_slice()
-        {
-            [k, v] => headers.insert(k.to_string(), v.to_string()),
-            _ => None,
-        };
-        if content_read.trim().is_empty() {
-            break;
+    #[test]
+    fn test_single_equal_string_paths_matches() {
+        let route_paths = vec![
+            ("/path", "/path"),
+            ("path", "path"),
+            ("/path/", "/path/"),
+            ("/path/", "path"),
+            ("path", "/path"),
+            ("/path", "path"),
+        ];
+        for (route, path) in route_paths {
+            let (matches, _) = compare_route_w_path_and_get_path_params(route, path);
+            assert!(matches);
         }
     }
 
-    let request = Request {
-        verb: verb.to_string(),
-        path: path.to_string(),
-        body: None,
-        headers,
-    };
-
-    let response = check_routes(routes, request);
-
-    let headers = options
-        .default_headers
-        .iter()
-        .chain(response.headers.iter())
-        .map(|(k, v)| format!("{}: {}", k, v))
-        .collect::<Vec<String>>()
-        .join("\r\n");
-
-    let write = stream
-        .write_fmt(format_args!(
-            "HTTP/1.1 {}\r\n{}\r\n\r\n",
-            response.status_code, headers
-        ))
-        .and_then(|_a| stream.write_all(&response.bytes.unwrap_or_default()))
-        .and_then(|_b| stream.write_all(b"\r\n"))
-        .and_then(|_c| stream.shutdown(std::net::Shutdown::Both));
-
-    if write.is_err() {
-        return Err(Error::Connection("Could not write to stream.".to_string()));
-    }
-    Ok(())
-}
-
-#[derive(Clone)]
-pub struct ServerOptions {
-    pub address: String,
-    pub threads: u32,
-    pub default_headers: HashMap<String, String>,
-}
-
-const ADDRESS: &str = "0.0.0.0:8080";
-
-pub struct Server {
-    pub routes: Arc<Vec<Route>>,
-    pub options: ServerOptions,
-}
-
-impl Server {
-    pub fn new(routes: Vec<Route>) -> Server {
-        let a: Arc<Vec<Route>> = Arc::from(routes);
-        Server {
-            routes: a,
-            options: ServerOptions {
-                address: ADDRESS.to_string(),
-                threads: 4,
-                default_headers: HashMap::new(),
-            },
+    #[test]
+    fn test_matches_w_path_params() {
+        let route_paths = vec![
+            ("/path/:id", "/path/123"),
+            (":id/params", "more/params"),
+            ("/:id/:again", "/123/once-more"),
+            ("/:id/:id", "/123/once-more"),
+        ];
+        for (route, path) in route_paths {
+            let (matches, _) = compare_route_w_path_and_get_path_params(route, path);
+            assert!(matches);
         }
     }
 
-    pub fn set_address(&mut self, address: &str) -> &mut Self {
-        self.options.address = address.to_string();
-        self
-    }
-
-    pub fn set_threads(&mut self, threads: u32) -> &mut Self {
-        self.options.threads = threads;
-        self
-    }
-
-    pub fn add_default_header(&mut self, key: &str, value: &str) -> &mut Self {
-        self.options
-            .default_headers
-            .insert(key.to_string(), value.to_string());
-        self
-    }
-
-    pub fn listen(&self) {
-        let address = TcpListener::bind(self.options.address.clone()).unwrap();
-        let workers = Workers::new(self.options.threads);
-        for stream in address.incoming() {
-            match stream {
-                Ok(stream) => {
-                    let routes = self.routes.clone();
-                    let options = self.options.clone();
-                    workers.post(move || handle_connection(stream, &routes, &options));
-                }
-                Err(_) => {
-                    println!("Could not handle tcp connection.");
-                }
-            }
+    #[test]
+    fn test_non_matching_routes_w_path_params() {
+        let route_paths = vec![
+            ("some-path", "other-path"),
+            ("/*/some-path", "/some-path"),
+            ("/:id/some-path", "/some-path"),
+            ("/some-path/:id", "/some-path"),
+            (":id/some-path/:id", "/some-path"),
+        ];
+        for (route, path) in route_paths {
+            let (matches, _) = compare_route_w_path_and_get_path_params(route, path);
+            assert!(!matches);
         }
     }
 }

@@ -1,0 +1,155 @@
+use std::{
+    collections::HashMap,
+    io::{BufRead, BufReader, Write},
+    net::{TcpListener, TcpStream},
+    sync::Arc,
+};
+
+use crate::{
+    error::{Error, WebResult},
+    router::{check_routes, Request, Route},
+    workers::Workers,
+};
+
+fn handle_connection(
+    mut stream: TcpStream,
+    routes: &Vec<Route>,
+    options: &ServerOptions,
+) -> WebResult<()> {
+    let mut content_read = String::new();
+    let mut buf_read = BufReader::new(&mut stream);
+    let res = buf_read.read_line(&mut content_read);
+    if res.is_err() {
+        return Err(Error::Connection(
+            "Could not read from stream. Invalid buffer.".to_string(),
+        ));
+    }
+
+    let (verb, path) = match content_read.split(' ').collect::<Vec<_>>()[..] {
+        [verb, path, _version] => (verb, path),
+        _ => {
+            return Err(Error::Connection(format!(
+                "Unimplemented request handle for: '{}",
+                content_read
+            )))
+        }
+    };
+
+    let mut headers = HashMap::new();
+
+    loop {
+        let mut content_read = String::new();
+        let res = buf_read.read_line(&mut content_read);
+        if res.is_err() {
+            return Err(Error::Connection(
+                "Could not read from stream. Invalid buffer.".to_string(),
+            ));
+        }
+        match content_read
+            .trim()
+            .split(": ")
+            .collect::<Vec<_>>()
+            .as_slice()
+        {
+            [k, v] => headers.insert(k.to_string(), v.to_string()),
+            _ => None,
+        };
+        if content_read.trim().is_empty() {
+            break;
+        }
+    }
+
+    let request = Request {
+        verb: verb.to_string(),
+        path: path.to_string(),
+        path_params: None,
+        body: None,
+        headers,
+    };
+
+    let response = check_routes(routes, request);
+
+    let headers = options
+        .default_headers
+        .iter()
+        .chain(response.headers.iter())
+        .map(|(k, v)| format!("{}: {}", k, v))
+        .collect::<Vec<String>>()
+        .join("\r\n");
+
+    let write = stream
+        .write_fmt(format_args!(
+            "HTTP/1.1 {}\r\n{}\r\n\r\n",
+            response.status_code, headers
+        ))
+        .and_then(|_a| stream.write_all(&response.bytes.unwrap_or_default()))
+        .and_then(|_b| stream.write_all(b"\r\n"))
+        .and_then(|_c| stream.shutdown(std::net::Shutdown::Both));
+
+    if write.is_err() {
+        return Err(Error::Connection("Could not write to stream.".to_string()));
+    }
+    Ok(())
+}
+
+#[derive(Clone)]
+pub struct ServerOptions {
+    pub address: String,
+    pub threads: u32,
+    pub default_headers: HashMap<String, String>,
+}
+
+const ADDRESS: &str = "0.0.0.0:8080";
+
+pub struct Server {
+    pub routes: Arc<Vec<Route>>,
+    pub options: ServerOptions,
+}
+
+impl Server {
+    pub fn new(routes: Vec<Route>) -> Server {
+        let a: Arc<Vec<Route>> = Arc::from(routes);
+        Server {
+            routes: a,
+            options: ServerOptions {
+                address: ADDRESS.to_string(),
+                threads: 4,
+                default_headers: HashMap::new(),
+            },
+        }
+    }
+
+    pub fn set_address(&mut self, address: &str) -> &mut Self {
+        self.options.address = address.to_string();
+        self
+    }
+
+    pub fn set_threads(&mut self, threads: u32) -> &mut Self {
+        self.options.threads = threads;
+        self
+    }
+
+    pub fn add_default_header(&mut self, key: &str, value: &str) -> &mut Self {
+        self.options
+            .default_headers
+            .insert(key.to_string(), value.to_string());
+        self
+    }
+
+    pub fn listen(&self) {
+        let address = TcpListener::bind(self.options.address.clone()).unwrap();
+        let workers = Workers::new(self.options.threads);
+        for stream in address.incoming() {
+            match stream {
+                Ok(stream) => {
+                    let routes = self.routes.clone();
+                    let options = self.options.clone();
+                    workers.post(move || handle_connection(stream, &routes, &options));
+                }
+                Err(_) => {
+                    println!("Could not handle tcp connection.");
+                }
+            }
+        }
+    }
+}

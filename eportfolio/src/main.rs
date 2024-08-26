@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use unchained::{
     error::Error,
-    router::{HTTPVerb::*, ResponseContent, Route, Server},
+    router::{HTTPVerb::*, ResponseContent, Route},
+    server::Server,
     templates::{
         context::{ctx_map, ctx_str, ctx_vec, ContextTree, Primitive},
         render::{load_template, RenderOptions},
