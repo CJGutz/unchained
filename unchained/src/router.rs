@@ -115,6 +115,7 @@ fn read_file_to_respond(file: &str) -> Response {
 
 /// Checks if the route matches the path.
 /// Finds path params in the request.
+/// Removes all empty parameters.
 fn compare_route_w_path_and_get_path_params(
     route: &str,
     req_path: &str,
@@ -124,17 +125,19 @@ fn compare_route_w_path_and_get_path_params(
         .trim_end_matches('*')
         .trim_end_matches('/')
         .split('/')
+        .filter(|s| !s.is_empty())
         .collect::<Vec<_>>();
     let req_parts = req_path
         .trim_start_matches('/')
         .trim_end_matches('/')
-        .split('/');
+        .split('/')
+        .filter(|s| !s.is_empty());
     let mut params = HashMap::new();
     let mut match_route = true;
+    let last_is_star = route.ends_with('*');
     for (count, req_part) in req_parts.clone().enumerate() {
         let route_part = route_parts.get(count);
         if route_part.is_none() {
-            let last_is_star = route.ends_with('*');
             match_route = last_is_star;
             break;
         }
@@ -192,6 +195,7 @@ mod tests {
             ("/path/", "path"),
             ("path", "/path"),
             ("/path", "path"),
+            ("/path///", "path"),
         ];
         for (route, path) in route_paths {
             let (matches, _) = compare_route_w_path_and_get_path_params(route, path);
@@ -225,6 +229,29 @@ mod tests {
         for (route, path) in route_paths {
             let (matches, _) = compare_route_w_path_and_get_path_params(route, path);
             assert!(!matches);
+        }
+    }
+
+    #[test]
+    fn test_catchall_route() {
+        let route = "*";
+        let path = "/some-path";
+        let (matches, _) = compare_route_w_path_and_get_path_params(route, path);
+        assert!(matches);
+    }
+
+    #[test]
+    fn test_root_route() {
+        let route_paths = vec![
+            ("/", "/"),
+            ("/*", "/"),
+            ("", "/"),
+            ("/", ""),
+            ("", ""),
+        ];
+        for (route, path) in route_paths {
+            let (matches, _) = compare_route_w_path_and_get_path_params(route, path);
+            assert!(matches);
         }
     }
 }
