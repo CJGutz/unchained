@@ -242,13 +242,7 @@ mod tests {
 
     #[test]
     fn test_root_route() {
-        let route_paths = vec![
-            ("/", "/"),
-            ("/*", "/"),
-            ("", "/"),
-            ("/", ""),
-            ("", ""),
-        ];
+        let route_paths = vec![("/", "/"), ("/*", "/"), ("", "/"), ("/", ""), ("", "")];
         for (route, path) in route_paths {
             let (matches, _) = compare_route_w_path_and_get_path_params(route, path);
             assert!(matches);
