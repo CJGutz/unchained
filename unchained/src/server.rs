@@ -62,7 +62,7 @@ fn handle_connection(
     let request = Request {
         verb: verb.to_string(),
         path: path.to_string(),
-        path_params: None,
+        path_params: HashMap::new(),
         body: None,
         headers,
     };

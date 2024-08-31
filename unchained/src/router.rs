@@ -4,14 +4,14 @@ use std::{collections::HashMap, fmt::Display, path::PathBuf};
 pub struct Request {
     pub verb: String,
     pub path: String,
-    pub path_params: Option<HashMap<String, String>>,
+    pub path_params: HashMap<String, String>,
     pub body: Option<String>,
     pub headers: HashMap<String, String>,
 }
 
 impl Request {
     pub fn set_path_params(&mut self, params: HashMap<String, String>) -> &mut Self {
-        self.path_params = Some(params);
+        self.path_params = params;
         self
     }
 }
