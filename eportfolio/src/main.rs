@@ -1,8 +1,11 @@
 use std::collections::HashMap;
 
+pub mod render_markdown;
+
+use render_markdown::render_md;
 use unchained::{
     error::Error,
-    router::{HTTPVerb::*, ResponseContent, Route},
+    router::{HTTPVerb::*, Response, ResponseContent, Route},
     server::Server,
     templates::{
         context::{ctx_map, ctx_str, ctx_vec, ContextTree, Primitive},
@@ -155,11 +158,16 @@ fn main() {
         Some(context_experience),
         &RenderOptions::empty(),
     );
-    let page_404 = load_template(
+    let page_404 = match load_template(
         "templates/404.html",
-        Some(context_404),
+        Some(context_404.clone()),
         &RenderOptions::empty(),
-    );
+    ) {
+        Ok(template) => template,
+        Err(e) => handle_error(&e),
+    
+    };
+    let md = render_md("templates/course-detail.html", Some(context_404)).unwrap();
     let duration = start.elapsed();
     println!("Finished rendering after {} s", duration.as_secs_f64());
 
@@ -194,13 +202,22 @@ fn main() {
         folder_access("cv.pdf"),
         folder_access("robots.txt"),
         folder_access("templates/css/*"),
+        Route::new(GET,
+            "courses/:courseid/",
+            ResponseContent::FromRequest(Box::new(move |_req| {
+                if let Some(courseid) = _req.path_params.get("courseid") {
+                    if courseid == "1" {
+                        return Response::new_200(md.clone());
+                    }
+                    return Response::new_200(format!("Course id: {}", courseid));
+                }
+                return Response::new(Some(String::from("Not found")), 404);
+            })),
+        ),
         Route::new(
             GET,
             "/*",
-            ResponseContent::Str(match &page_404 {
-                Ok(template) => template.to_string(),
-                Err(e) => handle_error(e),
-            }),
+            ResponseContent::Str(page_404),
         ),
     ];
     let mut server = Server::new(routes);
