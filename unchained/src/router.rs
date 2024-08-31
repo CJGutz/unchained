@@ -1,5 +1,7 @@
 use std::{collections::HashMap, fmt::Display, path::PathBuf};
 
+use crate::zip_longest::ZipLongest;
+
 #[derive(Clone, Debug)]
 pub struct Request {
     pub verb: String,
@@ -122,7 +124,6 @@ fn compare_route_w_path_and_get_path_params(
 ) -> (bool, HashMap<String, String>) {
     let route_parts = route
         .trim_start_matches('/')
-        .trim_end_matches('*')
         .trim_end_matches('/')
         .split('/')
         .filter(|s| !s.is_empty())
@@ -135,23 +136,29 @@ fn compare_route_w_path_and_get_path_params(
     let mut params = HashMap::new();
     let mut match_route = true;
     let last_is_star = route.ends_with('*');
-    for (count, req_part) in req_parts.clone().enumerate() {
-        let route_part = route_parts.get(count);
-        if route_part.is_none() {
-            match_route = last_is_star;
-            break;
-        }
-        let route_part = *route_part.unwrap();
 
-        if let Some(route_part) = route_part.strip_prefix(':') {
-            params.insert(route_part.to_string(), req_part.to_string());
-        } else if route_part != req_part {
-            match_route = false;
-            break;
+    for (route_part, req_part) in route_parts.iter().zip_longest(req_parts) {
+        match (route_part, req_part) {
+            (None, None) => break,
+            (None, Some(_)) => {
+                match_route = last_is_star;
+                break;
+            }
+            (Some(part), None) => {
+                match_route = *part == "*";
+                break;
+            }
+            (Some(route_part), Some(req_part)) => {
+                if let Some(route_no_prefix) = route_part.strip_prefix(':') {
+                    params.insert(route_no_prefix.to_string(), req_part.to_string());
+                } else if *route_part != req_part {
+                    match_route = *route_part == "*";
+                    if !match_route {
+                        break;
+                    }
+                }
+            }
         }
-    }
-    if route_parts.len() > req_parts.count() {
-        match_route = false;
     }
     (match_route, params)
 }
@@ -246,6 +253,46 @@ mod tests {
         for (route, path) in route_paths {
             let (matches, _) = compare_route_w_path_and_get_path_params(route, path);
             assert!(matches);
+        }
+    }
+
+    #[test]
+    fn test_matching_wildcard_routes() {
+        let route_paths = vec![
+            ("/*", ""),
+            ("*", ""),
+            ("*/", ""),
+            ("/*/", "/*/"),
+            ("path/*", "/path/more-path"),
+            ("path/*/", "/path/more-path"),
+            ("path/*/*/correct-path", "/path/more/other/correct-path"),
+            ("path/*/fixed-path", "/path/more/fixed-path"),
+            ("path/*/fixed-path/*/", "/path/more/fixed-path/anything/"),
+        ];
+        for (route, path) in route_paths {
+            let (matches, _) = compare_route_w_path_and_get_path_params(route, path);
+            assert!(matches);
+        }
+    }
+
+    #[test]
+    fn test_non_matching_wildcard_routes() {
+        let route_paths = vec![
+            ("path/*/fixed-path", "/wrong-root/more-path/fixed-path"),
+            ("path/*/fixed-path", "/path/more-path/wrong-end"),
+            ("path/*/", "wrong-path"),
+            (
+                "path/*/*/correct-path",
+                "/path/more-path/other-path/wrong-path",
+            ),
+            ("path/", "/*"),
+            ("path/", "path/*"),
+            ("path/more", "path/*"),
+            ("/experience/", "/experience/*"),
+        ];
+        for (route, path) in route_paths {
+            let (matches, _) = compare_route_w_path_and_get_path_params(route, path);
+            assert!(!matches);
         }
     }
 }
