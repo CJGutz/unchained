@@ -5,7 +5,7 @@ pub mod render_markdown;
 use render_markdown::render_md;
 use unchained::{
     error::Error,
-    router::{HTTPVerb::*, Response, ResponseContent, Route},
+    router::{HTTPVerb::*, Request, Response, ResponseContent, Route},
     server::Server,
     templates::{
         context::{ctx_map, ctx_str, ctx_vec, ContextTree, Primitive},
@@ -82,10 +82,10 @@ fn folder_access(path: &str) -> Route {
 }
 
 fn main() {
-    let mut context_landing = HashMap::new();
+    let mut context_base = HashMap::new();
 
     let current_year: isize = current_year().try_into().unwrap();
-    context_landing.insert(
+    context_base.insert(
         "current_year".to_string(),
         ContextTree::Leaf(Primitive::Num(current_year)),
     );
@@ -98,11 +98,11 @@ fn main() {
         ]),
         ctx_map([("href", ctx_str("/skills")), ("label", ctx_str("Skills"))]),
     ]);
-    context_landing.insert("page_links".to_string(), page_links.clone());
+    context_base.insert("page_links".to_string(), page_links.clone());
 
-    let mut context_skills = context_landing.clone();
-    let mut context_experience = context_landing.clone();
-    let context_404 = context_landing.clone();
+    let mut context_landing = context_base.clone();
+    let mut context_skills = context_base.clone();
+    let mut context_experience = context_base.clone();
 
     context_landing.insert(
         "carl_images".to_string(),
@@ -145,7 +145,7 @@ fn main() {
     let start = std::time::Instant::now();
     let landing = load_template(
         "templates/landing.html",
-        Some(context_landing),
+        Some(context_landing.clone()),
         &RenderOptions::empty(),
     );
     let skills = load_template(
@@ -160,16 +160,33 @@ fn main() {
     );
     let page_404 = match load_template(
         "templates/404.html",
-        Some(context_404.clone()),
+        Some(context_landing.clone()),
         &RenderOptions::empty(),
     ) {
         Ok(template) => template,
         Err(e) => handle_error(&e),
-    
     };
-    let md = render_md("templates/course-detail.html", Some(context_404)).unwrap();
     let duration = start.elapsed();
     println!("Finished rendering after {} s", duration.as_secs_f64());
+
+    let closure = {
+        let page_404 = page_404.clone();
+        Box::new(move |req: Request| {
+            let md = if let Some(courseid) = req.path_params.get("courseid") {
+                let mut ctx = context_base.clone();
+                let path = format!("templates/markdown/{}.md", courseid);
+                ctx.insert("course_md_path".to_string(), ctx_str(&path));
+                render_md("templates/course-detail.html", Some(ctx)).ok()
+            } else {
+                None
+            };
+            let is_some = md.is_some();
+            Response::new(
+                Some(md.unwrap_or(page_404.clone())),
+                if is_some { 200 } else { 404 },
+            )
+        })
+    };
 
     let routes = vec![
         Route::new(
@@ -202,22 +219,17 @@ fn main() {
         folder_access("cv.pdf"),
         folder_access("robots.txt"),
         folder_access("templates/css/*"),
-        Route::new(GET,
-            "courses/:courseid/",
-            ResponseContent::FromRequest(Box::new(move |_req| {
-                if let Some(courseid) = _req.path_params.get("courseid") {
-                    if courseid == "1" {
-                        return Response::new_200(md.clone());
-                    }
-                    return Response::new_200(format!("Course id: {}", courseid));
-                }
-                return Response::new(Some(String::from("Not found")), 404);
-            })),
+        Route::new(
+            GET,
+            "courses/:courseid",
+            ResponseContent::FromRequest(Box::new(closure)),
         ),
         Route::new(
             GET,
             "/*",
-            ResponseContent::Str(page_404),
+            ResponseContent::FromRequest(Box::new(move |_req: Request| {
+                Response::new(Some(page_404.clone()), 404)
+            })),
         ),
     ];
     let mut server = Server::new(routes);

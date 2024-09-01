@@ -1,13 +1,9 @@
 # Hello
 
-**Welcome to this first page.**
+**Welcome to this first page.Welcome to this first page.Welcome to this first page.Welcome to this first page.Welcome to this first page.Welcome to this first page.Welcome to this first page.Welcome to this first page.Welcome to this first page.Welcome to this first page.Welcome to this first page.**
 
 ### {* get current_year *}
 
-| c | o | o | l |
-|---|---|---|---|
-| 1 | 2 | 3 | 4 |
-|   |   |   |   |
 
 https://gutzkow.com 
 
@@ -15,5 +11,5 @@ https://gutzkow.com
 
 ~~carl@eisolutions.no~~
 
-![image info](/images/defib.gif "Some sort of Alt text")
+![image info](/images/carl/broa.webp "Some sort of Alt text")
 
