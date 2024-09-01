@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs};
+use std::collections::HashMap;
 
 pub mod render_markdown;
 
@@ -77,23 +77,12 @@ fn create_experience(
     ])
 }
 
-fn get_courses() -> ContextTree {
-    let directory = fs::read_dir("templates/markdown/courses").unwrap();
-    let pages = directory
-        .filter_map(|res| res.ok())
-        .map(|f| f.file_name())
-        .map(|name| {
-            ctx_map([(
-                "name",
-                ctx_str(
-                    name.to_str()
-                        .and_then(|s| s.strip_suffix(".md"))
-                        .unwrap_or_default(),
-                ),
-            )])
-        })
-        .collect::<Vec<_>>();
-    ctx_vec(pages)
+fn create_course(course_id: &str, title: &str, image_path: &str) -> ContextTree {
+    ctx_map([
+        ("course_id", ctx_str(course_id)),
+        ("title", ctx_str(title)),
+        ("image", ctx_str(image_path)),
+    ])
 }
 
 fn folder_access(path: &str) -> Route {
@@ -163,7 +152,15 @@ fn main() {
         create_experience("tihlde-index", "Programmer with TIHLDE Index", "Worked as a Back-end developer for index.", "tihlde.jpg", "Aug 2021", "Jun 2022", "https://tihlde.org", "https://github.com/tihlde/lepton", vec!["Django", "Docker"]),
     ]));
 
-    context_courses.insert("course_pages".to_string(), get_courses());
+    context_courses.insert(
+        "course_pages".to_string(),
+        ctx_vec(vec![
+            create_course("CS4515", "3D Computer Graphics and Animation", ""),
+            create_course("CS4505", "Software Architecture", ""),
+            create_course("DSAIT4005", "Machine and Deep Learning", ""),
+            create_course("CS4510", "Formal Reasoning about Software", ""),
+        ]),
+    );
 
     let start = std::time::Instant::now();
     let landing = load_template(
