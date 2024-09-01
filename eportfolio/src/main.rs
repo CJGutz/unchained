@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fs};
 
 pub mod render_markdown;
 
@@ -77,6 +77,25 @@ fn create_experience(
     ])
 }
 
+fn get_courses() -> ContextTree {
+    let directory = fs::read_dir("templates/markdown/courses").unwrap();
+    let pages = directory
+        .filter_map(|res| res.ok())
+        .map(|f| f.file_name())
+        .map(|name| {
+            ctx_map([(
+                "name",
+                ctx_str(
+                    name.to_str()
+                        .and_then(|s| s.strip_suffix(".md"))
+                        .unwrap_or_default(),
+                ),
+            )])
+        })
+        .collect::<Vec<_>>();
+    ctx_vec(pages)
+}
+
 fn folder_access(path: &str) -> Route {
     Route::new(GET, path, ResponseContent::FolderAccess)
 }
@@ -97,12 +116,14 @@ fn main() {
             ("label", ctx_str("Experience")),
         ]),
         ctx_map([("href", ctx_str("/skills")), ("label", ctx_str("Skills"))]),
+        ctx_map([("href", ctx_str("/courses")), ("label", ctx_str("Courses"))]),
     ]);
     context_base.insert("page_links".to_string(), page_links.clone());
 
     let mut context_landing = context_base.clone();
     let mut context_skills = context_base.clone();
     let mut context_experience = context_base.clone();
+    let mut context_courses = context_base.clone();
 
     context_landing.insert(
         "carl_images".to_string(),
@@ -142,6 +163,8 @@ fn main() {
         create_experience("tihlde-index", "Programmer with TIHLDE Index", "Worked as a Back-end developer for index.", "tihlde.jpg", "Aug 2021", "Jun 2022", "https://tihlde.org", "https://github.com/tihlde/lepton", vec!["Django", "Docker"]),
     ]));
 
+    context_courses.insert("course_pages".to_string(), get_courses());
+
     let start = std::time::Instant::now();
     let landing = load_template(
         "templates/landing.html",
@@ -158,6 +181,11 @@ fn main() {
         Some(context_experience),
         &RenderOptions::empty(),
     );
+    let courses = load_template(
+        "templates/course-list.html",
+        Some(context_courses),
+        &RenderOptions::empty(),
+    );
     let page_404 = match load_template(
         "templates/404.html",
         Some(context_landing.clone()),
@@ -168,25 +196,6 @@ fn main() {
     };
     let duration = start.elapsed();
     println!("Finished rendering after {} s", duration.as_secs_f64());
-
-    let closure = {
-        let page_404 = page_404.clone();
-        Box::new(move |req: Request| {
-            let md = if let Some(courseid) = req.path_params.get("courseid") {
-                let mut ctx = context_base.clone();
-                let path = format!("templates/markdown/{}.md", courseid);
-                ctx.insert("course_md_path".to_string(), ctx_str(&path));
-                render_md("templates/course-detail.html", Some(ctx)).ok()
-            } else {
-                None
-            };
-            let is_some = md.is_some();
-            Response::new(
-                Some(md.unwrap_or(page_404.clone())),
-                if is_some { 200 } else { 404 },
-            )
-        })
-    };
 
     let routes = vec![
         Route::new(
@@ -213,17 +222,42 @@ fn main() {
                 Err(e) => handle_error(e),
             }),
         ),
+        Route::new(
+            GET,
+            "/courses",
+            ResponseContent::Str(match &courses {
+                Ok(template) => template.to_string(),
+                Err(e) => handle_error(e),
+            }),
+        ),
+        Route::new(
+            GET,
+            "courses/:courseid",
+            ResponseContent::FromRequest({
+                let page_404 = page_404.clone();
+                Box::new(move |req: Request| {
+                    let md = if let Some(courseid) = req.path_params.get("courseid") {
+                        let mut ctx = context_base.clone();
+                        let path = format!("templates/markdown/courses/{}.md", courseid);
+                        ctx.insert("course_md_path".to_string(), ctx_str(&path));
+                        render_md("templates/course-detail.html", Some(ctx)).ok()
+                    } else {
+                        None
+                    };
+                    let is_some = md.is_some();
+                    Response::new(
+                        Some(md.unwrap_or(page_404.clone())),
+                        if is_some { 200 } else { 404 },
+                    )
+                })
+            }),
+        ),
         folder_access("/images/*"),
         folder_access("/Poppins/Poppins-Regular.ttf"),
         folder_access("favicon.ico"),
         folder_access("cv.pdf"),
         folder_access("robots.txt"),
         folder_access("templates/css/*"),
-        Route::new(
-            GET,
-            "courses/:courseid",
-            ResponseContent::FromRequest(Box::new(closure)),
-        ),
         Route::new(
             GET,
             "/*",
