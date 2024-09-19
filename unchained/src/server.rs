@@ -1,8 +1,10 @@
 use std::{
     collections::HashMap,
-    io::{BufRead, BufReader, Write},
+    io::{BufRead, BufReader, Read, Write},
     net::{TcpListener, TcpStream},
+    os::fd::AsFd,
     sync::Arc,
+    time::Duration,
 };
 
 use crate::{
@@ -36,9 +38,10 @@ fn handle_connection(
     };
 
     let mut headers = HashMap::new();
+    let mut content_read = String::new();
 
     loop {
-        let mut content_read = String::new();
+        content_read.clear();
         let res = buf_read.read_line(&mut content_read);
         if res.is_err() {
             return Err(Error::Connection(
@@ -59,11 +62,30 @@ fn handle_connection(
         }
     }
 
+    // HTTP/1.1 Content-Length SHOULD be included in the headers when body is present
+    // See https://www.rfc-editor.org/rfc/rfc9110.html#name-content-length
+    let body_len = headers
+        .get("Content-Length")
+        .unwrap_or(&String::from("0"))
+        .parse::<u64>()
+        .unwrap_or(0);
+    let mut buf = vec![0; body_len as usize];
+    let res = buf_read.read_exact(&mut buf);
+    let body = match res {
+        Ok(_) => String::from_utf8(buf).ok(),
+        Err(_) => {
+            return Err(Error::Connection(format!(
+                "Failed to read body of content length {}.",
+                body_len
+            )))
+        }
+    };
+
     let request = Request {
         verb: verb.to_string(),
         path: path.to_string(),
         path_params: HashMap::new(),
-        body: None,
+        body,
         headers,
     };
 
@@ -76,15 +98,14 @@ fn handle_connection(
         .map(|(k, v)| format!("{}: {}", k, v))
         .collect::<Vec<String>>()
         .join("\r\n");
-
     let write = stream
         .write_fmt(format_args!(
             "HTTP/1.1 {}\r\n{}\r\n\r\n",
             response.status_code, headers
         ))
-        .and_then(|_a| stream.write_all(&response.bytes.unwrap_or_default()))
-        .and_then(|_b| stream.write_all(b"\r\n"))
-        .and_then(|_c| stream.shutdown(std::net::Shutdown::Both));
+        .and_then(|_| stream.write_all(&response.bytes.unwrap_or_default()))
+        .and_then(|_| stream.write_all(b"\r\n"))
+        .and_then(|_| stream.shutdown(std::net::Shutdown::Both));
 
     if write.is_err() {
         return Err(Error::Connection("Could not write to stream.".to_string()));
