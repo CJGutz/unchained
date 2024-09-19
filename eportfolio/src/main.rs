@@ -1,8 +1,11 @@
 use std::collections::HashMap;
 
+pub mod render_markdown;
+
+use render_markdown::render_md;
 use unchained::{
     error::Error,
-    router::{HTTPVerb::*, ResponseContent, Route},
+    router::{HTTPVerb::*, Request, Response, ResponseContent, Route},
     server::Server,
     templates::{
         context::{ctx_map, ctx_str, ctx_vec, ContextTree, Primitive},
@@ -27,6 +30,13 @@ fn handle_error(e: &Error) -> String {
         Error::LoadFile(s) => s.to_string(),
         Error::ParseTemplate(s) => s.to_string(),
         Error::Connection(s) => s.to_string(),
+    }
+}
+
+fn load_tmpl_and_handle_error(path: &str, context: Option<HashMap<String, ContextTree>>) -> String {
+    match load_template(path, context, &RenderOptions::empty()) {
+        Ok(template) => template.to_string(),
+        Err(e) => handle_error(&e),
     }
 }
 
@@ -74,15 +84,23 @@ fn create_experience(
     ])
 }
 
+fn create_course(course_id: &str, title: &str, image_path: &str) -> ContextTree {
+    ctx_map([
+        ("course_id", ctx_str(course_id)),
+        ("title", ctx_str(title)),
+        ("image", ctx_str(image_path)),
+    ])
+}
+
 fn folder_access(path: &str) -> Route {
     Route::new(GET, path, ResponseContent::FolderAccess)
 }
 
 fn main() {
-    let mut context_landing = HashMap::new();
+    let mut context_base = HashMap::new();
 
     let current_year: isize = current_year().try_into().unwrap();
-    context_landing.insert(
+    context_base.insert(
         "current_year".to_string(),
         ContextTree::Leaf(Primitive::Num(current_year)),
     );
@@ -94,12 +112,14 @@ fn main() {
             ("label", ctx_str("Experience")),
         ]),
         ctx_map([("href", ctx_str("/skills")), ("label", ctx_str("Skills"))]),
+        ctx_map([("href", ctx_str("/courses")), ("label", ctx_str("Courses"))]),
     ]);
-    context_landing.insert("page_links".to_string(), page_links.clone());
+    context_base.insert("page_links".to_string(), page_links.clone());
 
-    let mut context_skills = context_landing.clone();
-    let mut context_experience = context_landing.clone();
-    let context_404 = context_landing.clone();
+    let mut context_landing = context_base.clone();
+    let mut context_skills = context_base.clone();
+    let mut context_experience = context_base.clone();
+    let mut context_courses = context_base.clone();
 
     context_landing.insert(
         "carl_images".to_string(),
@@ -139,53 +159,52 @@ fn main() {
         create_experience("tihlde-index", "Programmer with TIHLDE Index", "Worked as a Back-end developer for index.", "tihlde.jpg", "Aug 2021", "Jun 2022", "https://tihlde.org", "https://github.com/tihlde/lepton", vec!["Django", "Docker"]),
     ]));
 
+    context_courses.insert(
+        "course_pages".to_string(),
+        ctx_vec(vec![
+            create_course("CS4515", "3D Computer Graphics and Animation", ""),
+            create_course("CS4505", "Software Architecture", ""),
+            create_course("DSAIT4005", "Machine and Deep Learning", ""),
+            create_course("CS4510", "Formal Reasoning about Software", ""),
+        ]),
+    );
+
     let start = std::time::Instant::now();
-    let landing = load_template(
-        "templates/landing.html",
-        Some(context_landing),
-        &RenderOptions::empty(),
-    );
-    let skills = load_template(
-        "templates/skills.html",
-        Some(context_skills),
-        &RenderOptions::empty(),
-    );
-    let experience = load_template(
-        "templates/experience.html",
-        Some(context_experience),
-        &RenderOptions::empty(),
-    );
-    let page_404 = load_template(
-        "templates/404.html",
-        Some(context_404),
-        &RenderOptions::empty(),
-    );
+    let landing =
+        load_tmpl_and_handle_error("templates/landing.html", Some(context_landing.clone()));
+    let skills = load_tmpl_and_handle_error("templates/skills.html", Some(context_skills));
+    let experience =
+        load_tmpl_and_handle_error("templates/experience.html", Some(context_experience));
+    let courses = load_tmpl_and_handle_error("templates/course-list.html", Some(context_courses));
+    let page_404 = load_tmpl_and_handle_error("templates/404.html", Some(context_landing));
     let duration = start.elapsed();
     println!("Finished rendering after {} s", duration.as_secs_f64());
 
     let routes = vec![
+        Route::new(GET, "/", ResponseContent::Str(landing)),
+        Route::new(GET, "/skills", ResponseContent::Str(skills)),
+        Route::new(GET, "/experience", ResponseContent::Str(experience)),
+        Route::new(GET, "/courses", ResponseContent::Str(courses)),
         Route::new(
             GET,
-            "/",
-            ResponseContent::Str(match &landing {
-                Ok(template) => template.to_string(),
-                Err(e) => handle_error(e),
-            }),
-        ),
-        Route::new(
-            GET,
-            "/skills",
-            ResponseContent::Str(match &skills {
-                Ok(template) => template.to_string(),
-                Err(e) => handle_error(e),
-            }),
-        ),
-        Route::new(
-            GET,
-            "/experience",
-            ResponseContent::Str(match &experience {
-                Ok(template) => template.to_string(),
-                Err(e) => handle_error(e),
+            "courses/:courseid",
+            ResponseContent::FromRequest({
+                let page_404 = page_404.clone();
+                Box::new(move |req: Request| {
+                    let md = if let Some(courseid) = req.path_params.get("courseid") {
+                        let mut ctx = context_base.clone();
+                        let path = format!("templates/markdown/courses/{}.md", courseid);
+                        ctx.insert("course_md_path".to_string(), ctx_str(&path));
+                        render_md("templates/course-detail.html", Some(ctx)).ok()
+                    } else {
+                        None
+                    };
+                    let is_some = md.is_some();
+                    Response::new(
+                        Some(md.unwrap_or(page_404.clone())),
+                        if is_some { 200 } else { 404 },
+                    )
+                })
             }),
         ),
         folder_access("/images/*"),
@@ -197,10 +216,9 @@ fn main() {
         Route::new(
             GET,
             "/*",
-            ResponseContent::Str(match &page_404 {
-                Ok(template) => template.to_string(),
-                Err(e) => handle_error(e),
-            }),
+            ResponseContent::FromRequest(Box::new(move |_req: Request| {
+                Response::new(Some(page_404.clone()), 404)
+            })),
         ),
     ];
     let mut server = Server::new(routes);
