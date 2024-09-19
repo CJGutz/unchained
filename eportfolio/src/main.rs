@@ -33,6 +33,13 @@ fn handle_error(e: &Error) -> String {
     }
 }
 
+fn load_tmpl_and_handle_error(path: &str, context: Option<HashMap<String, ContextTree>>) -> String {
+    match load_template(path, context, &RenderOptions::empty()) {
+        Ok(template) => template.to_string(),
+        Err(e) => handle_error(&e),
+    }
+}
+
 fn create_skill(
     id: &str,
     name: &str,
@@ -163,70 +170,21 @@ fn main() {
     );
 
     let start = std::time::Instant::now();
-    let landing = load_template(
-        "templates/landing.html",
-        Some(context_landing.clone()),
-        &RenderOptions::empty(),
-    );
-    let skills = load_template(
-        "templates/skills.html",
-        Some(context_skills),
-        &RenderOptions::empty(),
-    );
-    let experience = load_template(
-        "templates/experience.html",
-        Some(context_experience),
-        &RenderOptions::empty(),
-    );
-    let courses = load_template(
-        "templates/course-list.html",
-        Some(context_courses),
-        &RenderOptions::empty(),
-    );
-    let page_404 = match load_template(
-        "templates/404.html",
-        Some(context_landing.clone()),
-        &RenderOptions::empty(),
-    ) {
-        Ok(template) => template,
-        Err(e) => handle_error(&e),
-    };
+    let landing =
+        load_tmpl_and_handle_error("templates/landing.html", Some(context_landing.clone()));
+    let skills = load_tmpl_and_handle_error("templates/skills.html", Some(context_skills));
+    let experience =
+        load_tmpl_and_handle_error("templates/experience.html", Some(context_experience));
+    let courses = load_tmpl_and_handle_error("templates/course-list.html", Some(context_courses));
+    let page_404 = load_tmpl_and_handle_error("templates/404.html", Some(context_landing));
     let duration = start.elapsed();
     println!("Finished rendering after {} s", duration.as_secs_f64());
 
     let routes = vec![
-        Route::new(
-            GET,
-            "/",
-            ResponseContent::Str(match &landing {
-                Ok(template) => template.to_string(),
-                Err(e) => handle_error(e),
-            }),
-        ),
-        Route::new(
-            GET,
-            "/skills",
-            ResponseContent::Str(match &skills {
-                Ok(template) => template.to_string(),
-                Err(e) => handle_error(e),
-            }),
-        ),
-        Route::new(
-            GET,
-            "/experience",
-            ResponseContent::Str(match &experience {
-                Ok(template) => template.to_string(),
-                Err(e) => handle_error(e),
-            }),
-        ),
-        Route::new(
-            GET,
-            "/courses",
-            ResponseContent::Str(match &courses {
-                Ok(template) => template.to_string(),
-                Err(e) => handle_error(e),
-            }),
-        ),
+        Route::new(GET, "/", ResponseContent::Str(landing)),
+        Route::new(GET, "/skills", ResponseContent::Str(skills)),
+        Route::new(GET, "/experience", ResponseContent::Str(experience)),
+        Route::new(GET, "/courses", ResponseContent::Str(courses)),
         Route::new(
             GET,
             "courses/:courseid",
