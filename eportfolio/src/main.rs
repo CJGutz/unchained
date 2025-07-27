@@ -125,16 +125,8 @@ fn main() {
         "carl_images".to_string(),
         ctx_vec(vec![
             ctx_map([
-                ("path", ctx_str("ski.webp")),
-                ("alt", ctx_str("Me on a randonee ski trip")),
-            ]),
-            ctx_map([
-                ("path", ctx_str("gotland-gaard.webp")),
-                ("alt", ctx_str("Me on Gotland")),
-            ]),
-            ctx_map([
-                ("path", ctx_str("storheia.webp")),
-                ("alt", ctx_str("Me on top of Storheia")),
+                ("path", ctx_str("cafe-midi.webp")),
+                ("alt", ctx_str("Me and goat at Cafe du Midi")),
             ]),
         ]),
     );
