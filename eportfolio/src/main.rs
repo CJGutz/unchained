@@ -15,13 +15,33 @@ use unchained::{
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
+const SEC_PER_DAY: u64 = 60 * 60 * 24;
+const SEC_PER_YEAR: u64 = SEC_PER_DAY * 365;
+
 fn current_year() -> u64 {
     let current_time = SystemTime::now();
     let since_epoch = current_time.duration_since(UNIX_EPOCH).unwrap();
     let seconds_since_epoch = since_epoch.as_secs();
-    let seconds_in_year: u64 = 60 * 60 * 24 * 365;
 
-    1970 + (seconds_since_epoch / seconds_in_year)
+    1970 + (seconds_since_epoch / SEC_PER_YEAR)
+}
+
+const BIRTH_YEAR: u64 = 2002 - 1970;  // 1970 is the epoch year
+/// Adding `BIRTH_DAY` to `BIRTH_MONTH` full months
+const BIRTH_MONTH: u64 = 6;
+const BIRTH_DAY: u64 = 19;
+const AVERAGE_MONTH_DAYS: f64 = 30.436875; // Average days in a month
+
+fn current_age() -> u64 {
+    let current_time = SystemTime::now();
+    let since_epoch = current_time.duration_since(UNIX_EPOCH).unwrap();
+
+    let since_birthday = (since_epoch.as_secs() as f64)
+        - ((BIRTH_YEAR * 365 * SEC_PER_DAY) as f64
+            + (BIRTH_MONTH as f64) * AVERAGE_MONTH_DAYS * (SEC_PER_DAY as f64)
+            + (BIRTH_DAY * SEC_PER_DAY) as f64);
+
+    (since_birthday / SEC_PER_YEAR as f64) as u64
 }
 
 fn handle_error(e: &Error) -> String {
@@ -128,7 +148,20 @@ fn main() {
                 ("path", ctx_str("cafe-midi.webp")),
                 ("alt", ctx_str("Me and goat at Cafe du Midi")),
             ]),
+            ctx_map([
+                ("path", ctx_str("abtswoudse-bos.webp")),
+                ("alt", ctx_str("Park in Delft")),
+            ]),
+            ctx_map([
+                ("path", ctx_str("zeeland-beach.webp")),
+                ("alt", ctx_str("Beach in Zeeland")),
+            ]),
         ]),
+    );
+    context_landing.insert(
+        "age".into(),
+        // Error if age is invalid isize
+        ContextTree::Leaf(Primitive::Num(current_age().try_into().unwrap()))
     );
 
     context_skills.insert("skills".to_string(), ctx_vec(vec![

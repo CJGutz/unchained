@@ -1,7 +1,8 @@
-{* component templates/base.html { 
+{* component templates/base.html {
 <div>
   <div class="absolute top-0 overflow-visible">
-    <div class="text-transparent font-mono lg:text-[30rem] text-[20rem] m-10 mt-20 blur-md whitespace-nowrap" style="-webkit-text-stroke:7px gray">
+    <div class="text-transparent font-mono lg:text-[30rem] text-[20rem] m-10 mt-20 blur-md whitespace-nowrap"
+      style="-webkit-text-stroke:7px gray">
       <p class="md:ml-20 -mt-44 break-keep" style="transform:translateX(-0rem)">Carl</p>
       <p class="-mt-48 break-keep" style="transform:translateX(0rem)">Gützkow</p>
     </div>
@@ -9,7 +10,8 @@
   <div class="relative grid grid-cols-1 lg:grid-cols-2 place-items-center w-full full">
     <div class="flex flex-col justify-center w-full">
       <div class="relative m-8 w-[300px] md:w-[500px] h-[300px] md:h-[500px]">
-        <img alt="Carl Gützkow" src="/images/carl/eisolutions-profile.webp" width="500" height="500" decoding="async" data-nimg="1" class="absolute top-0 z-10" loading="lazy" style="color:transparent">
+        <img alt="Carl Gützkow" src="/images/carl/eisolutions-profile.webp" width="500" height="500" decoding="async"
+          data-nimg="1" class="absolute top-0 z-10" loading="lazy" style="color:transparent">
       </div>
       <div class="text-2xl text-center px-3">
         <span>
@@ -40,8 +42,8 @@
         </a>
       </div>
       <div class="grid grid-cols-2 gap-4 m-5">
-        {* for button in page_links { 
-          {* component templates/front-button.html label=button.label link=button.href *}
+        {* for button in page_links {
+        {* component templates/front-button.html label=button.label link=button.href *}
         } *}
       </div>
     </div>
@@ -49,16 +51,20 @@
 </div>
 <div class="w-full mt-96 sm-p-10 p-4">
   <h1 id="about" class="text-4xl font-bold">About me</h1>
-  <div class="p-10 flex flex-row gap-x-3 overflow-x-scroll 2xl:overflow-hidden snap-x snap-mandatory items-center">
-    {* for image in carl_images {
-    <img alt="{* get image.alt *}"  src="/images/carl/{* get image.path *}" height="2316" decoding="async" data-nimg="1" class="snap-center h-[500px]" loading="lazy" style="color:transparent">
-      } *}
-  </div>
   <div class="grid place-items-center">
-    <p class="p-10 max-w-4xl whitespace-pre-line text-lg">
-      I am a 22 year old Norwegian software developer eager to get a more in-depth understanding of computer science.
-      There is so much to learn in this vast field. I am currently attending TU Delft for my MSc in Computer Science to build on top of my BEng in Compputer Engineering from NTNU.
-      Through my studies, voluntary student organizations, and working with the company Ei Solutions, I have found interest in GIS applications and server and API infrastructure.
+    <p class="p-10 max-w-4xl whitespace-pre-line text-xl z-10">
+      A {* get age *} year old software developer studying <a class="underline" target="_blank"
+        href="https://www.tudelft.nl/en/education/programmes/masters/cs/msc-computer-science">Computer Science at TU
+        Delft</a> and working for <a class="underline" target="_blank" href="https://telescope.eco">Telescope</a>.
+      I followed the tracks Computer Graphics and Programming Languages and I am currently writing a thesis about process scheduling in a new quantum computer operating system (planning to add some more info about that).
     </p>
+
   </div>
-} *}
+  <div id="scroll-images"
+    class="p-10 flex flex-row gap-x-3 overflow-x-scroll snap-x snap-always snap-mandatory scroll-smooth max-h-[600px] ">
+    {* for image in carl_images {
+    <img alt="{* get image.alt *}" src="/images/carl/{* get image.path *}" height="500" width="665" decoding="async"
+      data-nimg="1" class="snap-center" loading="lazy" style="color:transparent">
+    } *}
+  </div>
+  } *}
