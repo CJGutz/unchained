@@ -26,7 +26,7 @@ fn current_year() -> u64 {
     1970 + (seconds_since_epoch / SEC_PER_YEAR)
 }
 
-const BIRTH_YEAR: u64 = 2002 - 1970;  // 1970 is the epoch year
+const BIRTH_YEAR: u64 = 2002 - 1970; // 1970 is the epoch year
 /// Adding `BIRTH_DAY` to `BIRTH_MONTH` full months
 const BIRTH_MONTH: u64 = 6;
 const BIRTH_DAY: u64 = 19;
@@ -161,7 +161,7 @@ fn main() {
     context_landing.insert(
         "age".into(),
         // Error if age is invalid isize
-        ContextTree::Leaf(Primitive::Num(current_age().try_into().unwrap()))
+        ContextTree::Leaf(Primitive::Num(current_age().try_into().unwrap())),
     );
 
     context_skills.insert("skills".to_string(), ctx_vec(vec![

@@ -26,15 +26,10 @@ impl Match {
 /// assert_eq!(found.to, 33);
 /// ```
 pub fn find_between(content: &str, from: &str, to: &str) -> Option<Match> {
-    let from_index = match content.find(from) {
-        Some(index) => index,
-        None => return None,
-    };
+    let from_index = content.find(from)?;
     let after_from = &content[from_index + from.len()..];
-    let to_index = match after_from.find(to) {
-        Some(index) => index,
-        None => return None,
-    };
+
+    let to_index = after_from.find(to)?;
     let content_inside = &after_from[..to_index];
 
     Some(Match {
