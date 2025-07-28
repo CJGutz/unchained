@@ -98,7 +98,7 @@ fn handle_connection(
         .join("\r\n");
     let write = stream
         .write_fmt(format_args!(
-            "HTTP/2 {}\r\n{}\r\n\r\n",
+            "HTTP/1.1 {}\r\n{}\r\n\r\n",
             response.status_code, headers
         ))
         .and_then(|_| stream.write_all(&response.bytes.unwrap_or_default()))
