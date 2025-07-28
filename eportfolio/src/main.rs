@@ -248,5 +248,6 @@ fn main() {
     ];
     let mut server = Server::new(routes);
     server.add_default_header("Cache-Control", "max-age=300");
+    server.add_default_header("Accept-Encoding", "gzip, compress, br");
     server.listen();
 }
