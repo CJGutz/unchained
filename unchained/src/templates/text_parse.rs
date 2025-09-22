@@ -17,6 +17,7 @@ impl Match {
 /// Finds the first match of from and to in the content.
 /// Example:
 /// ```
+/// use unchained_web::templates::text_parse::find_between;
 /// let found = find_between("content that | contains patterns | but", "|", "|");
 ///
 /// assert!(found.is_some());
@@ -130,8 +131,9 @@ pub fn between_connected_patterns(
 /// of `from` and `to` and returns it exclusive of the patterns.
 /// Example:
 /// ```
+/// use unchained_web::templates::text_parse::remove_between;
 /// let content = String::from("A string with [a pattern] found");
-/// let res = remove_between(content, "[", "]");
+/// let res = remove_between(&content, "[", "]");
 /// assert!(res.is_some());
 /// let (changed_content, inside_pattern) = res.unwrap();
 /// assert_eq!(changed_content, "A string with  found".to_string());

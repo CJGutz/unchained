@@ -28,10 +28,11 @@ where
     /// Also starts waiting for tasks.
     /// Example:
     /// ```
-    /// use unchained::workers::Workers;
+    /// use unchained_web::workers::Workers;
     /// let mut workers = Workers::new(4);
     /// workers.post(|| {
     ///    println!("Hello from a worker!");
+    ///    Ok::<(), String>(())
     /// });
     /// ```
     pub fn new(amount: u32) -> Self {

@@ -56,7 +56,7 @@ pub fn operation_params_and_children(operation: &str) -> Option<TemplateOperatio
 pub type TemplateOperation =
     fn(TemplateOperationCall, &ContextMap, &RenderOptions) -> WebResult<String>;
 /// Example template operation
-/// ```
+/// ```html
 /// {* if boolean {
 ///  <div>Renders if true</div>
 /// }
@@ -189,7 +189,7 @@ fn if_operation(
 /// that changes in each iteration to the
 /// next value in the range.
 /// Example:
-/// ```
+/// ```html
 /// {* for element in range {
 ///    <div>{element}</div>
 ///    }
@@ -252,7 +252,7 @@ fn for_loop_operation(
 /// Context can be given to the component. If it is,
 /// other context data is removed.
 ///
-/// ```
+/// ```html
 /// <!-- page.html -->
 /// {* component file.html data=object.attribute {
 ///     {* slot default {
@@ -334,7 +334,7 @@ fn component_operation(
 /// a component. A component operation includes the
 /// slot html in the context. If a component excludes
 /// a slot. It renderes nothing.
-/// ```
+/// ```html
 /// <!-- page.html -->
 /// {* component file.html {
 ///     {* slot default {
@@ -371,7 +371,7 @@ fn slot(
 }
 
 /// Add a comment to the html to not render
-/// ```
+/// ```html
 /// {* comment Any information to not render *}
 /// ```
 fn comment_operation(
