@@ -73,6 +73,7 @@ pub fn get_template_operation(
         "component" => Some(component_operation),
         "slot" => Some(slot),
         "comment" => Some(comment_operation),
+        "dbg" => Some(dbg_operation),
         s => custom_operations.get(s).copied(),
     }
 }
@@ -379,4 +380,28 @@ fn comment_operation(
     _options: &RenderOptions,
 ) -> WebResult<String> {
     Ok(String::new())
+}
+
+/// Returns the entire context
+/// Useful for debugging to find what information can be retrieved
+fn dbg_operation(
+    call: TemplateOperationCall,
+    context: &ContextMap,
+    _options: &RenderOptions,
+) -> WebResult<String> {
+    let mut dbg = String::from("{ ");
+
+    let optional_attr = unwrap_n_params::<1>(&call.parameters).ok();
+    if let Some(attribute) = optional_attr {
+        let gotten_attr = attribute_from_context(attribute[0], context)?;
+        dbg.push_str(&gotten_attr.to_string());
+    } else {
+        for (k, v) in context.iter() {
+            let entry_str = format!("{k}: {val_str}, ", val_str = &v.to_string());
+            dbg.push_str(&entry_str);
+        }
+    }
+
+    dbg.push_str(" }");
+    Ok(dbg)
 }
