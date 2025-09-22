@@ -34,6 +34,63 @@ impl ContextTree {
     }
 }
 
+/// ==================================
+/// From implementation for ContextTree
+/// ==================================
+
+impl From<isize> for ContextTree {
+    fn from(value: isize) -> Self {
+        ContextTree::Leaf(Primitive::Num(value))
+    }
+}
+
+impl From<String> for ContextTree {
+    fn from(value: String) -> Self {
+        ContextTree::Leaf(Primitive::Str(value))
+    }
+}
+
+impl From<&str> for ContextTree {
+    fn from(value: &str) -> Self {
+        value.to_string().into()
+    }
+}
+
+impl From<bool> for ContextTree {
+    fn from(value: bool) -> Self {
+        ContextTree::Leaf(Primitive::Bool(value))
+    }
+}
+
+impl<T: Into<ContextTree>> From<Vec<T>> for ContextTree {
+    fn from(value: Vec<T>) -> Self {
+        ContextTree::Array(Box::new(value.into_iter().map(|v| v.into()).collect()))
+    }
+}
+
+impl<V: Into<ContextTree>> From<HashMap<String, V>> for ContextTree {
+    fn from(value: HashMap<String, V>) -> Self {
+        ContextTree::Branch(Box::new(
+            value.into_iter().map(|(k, v)| (k, v.into())).collect(),
+        ))
+    }
+}
+
+impl<V: Into<ContextTree>, const N: usize> From<[(&str, V); N]> for ContextTree {
+    fn from(value: [(&str, V); N]) -> Self {
+        ContextTree::Branch(Box::new(
+            value
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v.into()))
+                .collect(),
+        ))
+    }
+}
+
+/// ==================================
+/// Display implementation for ContextTree
+/// ==================================
+
 impl Display for Primitive {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -68,10 +125,14 @@ impl Display for ContextTree {
     }
 }
 
+/// Convert a vector of context trees to an array context tree
+/// __Deprecated__: Use ContextTree::from instead
 pub fn ctx_vec(parameters: Vec<ContextTree>) -> ContextTree {
     ContextTree::Array(Box::new(parameters))
 }
 
+/// Convert an array of key-value pairs of context trees to a branch context tree
+/// __Deprecated__: Use ContextTree::from instead
 pub fn ctx_map<const N: usize>(array: [(&str, ContextTree); N]) -> ContextTree {
     let mut string_array: Vec<(String, ContextTree)> = Vec::with_capacity(N);
     for (s, c) in array.iter() {
@@ -84,6 +145,8 @@ pub fn ctx_map<const N: usize>(array: [(&str, ContextTree); N]) -> ContextTree {
     ContextTree::Branch(Box::new(map))
 }
 
+/// Convert a string slice to a context tree
+/// __Deprecated__: Use ContextTree::from instead
 pub fn ctx_str(str: &str) -> ContextTree {
     ContextTree::Leaf(Primitive::Str(str.to_string()))
 }
