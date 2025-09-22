@@ -103,12 +103,13 @@ fn create_experience(
     .into()
 }
 
-fn create_course(course_id: &str, title: &str, image_path: &str) -> impl Into<ContextTree> {
-    ContextTree::from([
+fn create_course(course_id: &str, title: &str, image_path: &str) -> ContextTree {
+    [
         ("course_id", course_id),
         ("title", title),
         ("image", image_path),
-    ])
+    ]
+    .into()
 }
 
 fn folder_access(path: &str) -> Route {
@@ -116,12 +117,12 @@ fn folder_access(path: &str) -> Route {
 }
 
 fn main() {
-    let mut context_base: HashMap<String, ContextTree> = HashMap::new();
+    let mut context_base = HashMap::new();
 
     let current_year: isize = current_year().try_into().unwrap();
     context_base.insert("current_year".to_string(), current_year.into());
 
-    let page_links = vec![
+    let page_links = [
         [("href", "/#about"), ("label", "About me")],
         [("href", "/experience"), ("label", "Experience")],
         [("href", "/skills"), ("label", "Skills")],
@@ -136,7 +137,7 @@ fn main() {
 
     context_landing.insert(
         "carl_images".to_string(),
-        vec![
+        [
             [
                 ("path", "cafe-midi.webp"),
                 ("alt", "Me and goat at Cafe du Midi"),
@@ -146,13 +147,9 @@ fn main() {
         ]
         .into(),
     );
-    context_landing.insert(
-        "age".into(),
-        // Error if age is invalid isize
-        (current_age() as isize).try_into().unwrap(),
-    );
+    context_landing.insert("age".into(), (current_age() as isize).into());
 
-    context_skills.insert("skills".to_string(), vec![
+    context_skills.insert("skills".to_string(), [
         create_skill("django", "Django", "I have used Django in various projects in Index, Hackerspace, and Ei Solutions. It has been my Go To framework for backend developement because of its simplicity, scalability, and effeciency.", 5, "django.png"),
         create_skill("java", "Java", "Java was used extensively at NTNU and was often required for school projects with Spring Boot, Maven and more.", 5, "java.png"),
         create_skill("docker", "Docker", "I have used docker in several projects with Index, Hackerspace, and Ei Solutions. It has been very useful in both development and deployment. Yet, it is incredibly complex to master. My skill with Docker centers around using Compose and creating Dockerfiles.", 4, "docker.png"),
@@ -164,7 +161,7 @@ fn main() {
         create_skill("rust", "Rust", "I enjoy writing in this language and have created some fun projects with it, including this website.", 2, "rust.png"),
     ].into());
 
-    context_experience.insert("experience_list".to_string(), vec![
+    context_experience.insert("experience_list".to_string(), [
         create_experience("unchained", "Unchained router and templater", "Wanted to remove as much JavaScript from the website as possible so created a router and html template library that this website is created with.", "unchained.png", "Mar 2024", "", "https://gutzkow.com", "https://github.com/cjgutz/unchained", vec!["Rust", "Docker"]),
         create_experience("hackerspace-deputy", "Deputy Commander - Hackerspace NTNU", "The deputy commander, together with the lead and the financial manager, had the responsibility to administer the organization. We made equipment available for students, organized events like the general assembly, and created an environment for students to learn. The last few months, I took the lead role as the previous leader stepped down.", "hackerspace.png", "Mar 2023", "Mar 2024", "https://hackerspace-ntnu.no", "https://github.com/hackerspace-ntnu", vec![]),
         create_experience("telescope", "Telescope", "We started as two developers and a project manager who created the first prototype for an application. The application helps property developers manage a risk and vulnerability assessment of physical climate risk and biodiversity. I had responsibility for the Back-end and managed analysis using large amounts of geodata in a postGIS database. In the summer of 2023, with more teamates, we rewrote the entire application with a higher priority on user experience. This tought me a great deal about creating applications that scale and easily adapts to changing circumstances and customers.", "telescope.jpg", "Jun 22", "", "https://telescope.eco", "", vec!["Django", "PostGIS", "QGIS", "Docker"]),
@@ -174,7 +171,7 @@ fn main() {
 
     context_courses.insert(
         "course_pages".to_string(),
-        vec![
+        [
             create_course("CS4515", "3D Computer Graphics and Animation", ""),
             create_course("CS4505", "Software Architecture", ""),
             create_course("DSAIT4005", "Machine and Deep Learning", ""),

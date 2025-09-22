@@ -76,6 +76,12 @@ impl<V: Into<ContextTree>> From<HashMap<String, V>> for ContextTree {
     }
 }
 
+impl<V: Into<ContextTree>, const N: usize> From<[V; N]> for ContextTree {
+    fn from(value: [V; N]) -> Self {
+        ContextTree::Array(Box::new(value.into_iter().map(|v| v.into()).collect()))
+    }
+}
+
 impl<V: Into<ContextTree>, const N: usize> From<[(&str, V); N]> for ContextTree {
     fn from(value: [(&str, V); N]) -> Self {
         ContextTree::Branch(Box::new(
