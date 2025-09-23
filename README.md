@@ -25,8 +25,7 @@ fn main() {
     let template = load_template("landing-page.html", Some(context), &RenderOptions::empty()).unwrap();
 
     let routes = vec![
-        Route::new(GET, "/", ResponseContent::Str(template),
-        ),
+        Route::new(GET, "/", ResponseContent::Str(template)),
         Route::new(GET, "/images/*", ResponseContent::FolderAccess),
     ];
 
@@ -54,11 +53,3 @@ fn main() {
     </div>
 } *}
 ```
-
-### Grammar
-
-op_name: "for" | "if" | "component" | "slot" ... \
-parameters: (\w+\s\*)+ \
-html: !( template_operation ) \
-children: "{" html "}" \
-template_operation: "{\*" op_name parameters? children? "\*}"
