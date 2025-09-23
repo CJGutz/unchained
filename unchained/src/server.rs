@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     io::{BufRead, BufReader, Read, Write},
-    net::{TcpListener, TcpStream},
+    net::{Shutdown, TcpListener, TcpStream},
     sync::Arc,
 };
 
@@ -94,7 +94,7 @@ fn handle_connection(
     response_headers
         .entry("Content-Length".into())
         .or_insert(response_bytes.len().to_string());
-    response_headers.insert("Connection".into(), "keep-alive".into());
+    response_headers.insert("Connection".into(), "close".into());
 
     let headers = options
         .default_headers
@@ -109,7 +109,7 @@ fn handle_connection(
             response.status_code, headers
         ))
         .and_then(|_| stream.write_all(&response_bytes))
-        .and_then(|_| stream.write_all(b"\r\n"));
+        .and_then(|_| stream.shutdown(Shutdown::Write));
 
     if write.is_err() {
         return Err(Error::Connection("Could not write to stream.".to_string()));
