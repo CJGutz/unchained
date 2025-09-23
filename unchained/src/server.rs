@@ -89,6 +89,10 @@ fn handle_connection(
 
     let response = check_routes(routes, request);
 
+    let mut response_headers = response.headers.clone();
+    let response_bytes = response.bytes.unwrap_or_default();
+    response_headers.insert("Content-Length".into(), response_bytes.len().to_string());
+
     let headers = options
         .default_headers
         .iter()
@@ -101,9 +105,8 @@ fn handle_connection(
             "HTTP/1.1 {}\r\n{}\r\n\r\n",
             response.status_code, headers
         ))
-        .and_then(|_| stream.write_all(&response.bytes.unwrap_or_default()))
-        .and_then(|_| stream.write_all(b"\r\n"))
-        .and_then(|_| stream.shutdown(std::net::Shutdown::Both));
+        .and_then(|_| stream.write_all(&response_bytes))
+        .and_then(|_| stream.shutdown(std::net::Shutdown::Write));
 
     if write.is_err() {
         return Err(Error::Connection("Could not write to stream.".to_string()));
