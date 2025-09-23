@@ -141,14 +141,14 @@ impl Display for ContextTree {
 
 /// Convert a vector of context trees to an array context tree
 /// __Deprecated__: Use [ContextTree]::from instead
-#[deprecated(note = "Use [ContextTree]::from instead")]
+#[deprecated(note = "Use [ContextTree]::from instead", since = "0.2.2")]
 pub fn ctx_vec(parameters: Vec<ContextTree>) -> ContextTree {
     ContextTree::Array(Box::new(parameters))
 }
 
 /// Convert an array of key-value pairs of context trees to a branch context tree
 /// __Deprecated__: Use [ContextTree]::from instead
-#[deprecated(note = "Use [ContextTree]::from instead")]
+#[deprecated(note = "Use [ContextTree]::from instead", since = "0.2.2")]
 pub fn ctx_map<const N: usize>(array: [(&str, ContextTree); N]) -> ContextTree {
     let mut string_array: Vec<(String, ContextTree)> = Vec::with_capacity(N);
     for (s, c) in array.iter() {
@@ -163,7 +163,7 @@ pub fn ctx_map<const N: usize>(array: [(&str, ContextTree); N]) -> ContextTree {
 
 /// Convert a string slice to a context tree
 /// __Deprecated__: Use [ContextTree]::from instead
-#[deprecated(note = "Use [ContextTree]::from instead")]
+#[deprecated(note = "Use [ContextTree]::from instead", since = "0.2.2")]
 pub fn ctx_str(str: &str) -> ContextTree {
     ContextTree::Leaf(Primitive::Str(str.to_string()))
 }
