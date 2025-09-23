@@ -55,6 +55,7 @@ pub fn operation_params_and_children(operation: &str) -> Option<TemplateOperatio
 
 pub type TemplateOperation =
     fn(TemplateOperationCall, &ContextMap, &RenderOptions) -> WebResult<String>;
+
 /// Example template operation
 /// ```html
 /// {* if boolean {
@@ -384,6 +385,10 @@ fn comment_operation(
 
 /// Returns the entire context
 /// Useful for debugging to find what information can be retrieved
+/// ```html
+/// {* dbg *} <!-- Prints out the entire context -->
+/// {* dbg nested.attribute *} <!-- Retrieve attribute in context -->
+/// ```
 fn dbg_operation(
     call: TemplateOperationCall,
     context: &ContextMap,

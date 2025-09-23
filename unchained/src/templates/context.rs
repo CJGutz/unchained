@@ -34,9 +34,9 @@ impl ContextTree {
     }
 }
 
-/// ==================================
-/// From implementation for ContextTree
-/// ==================================
+// ==================================
+// From implementation for ContextTree
+// ==================================
 
 impl From<isize> for ContextTree {
     fn from(value: isize) -> Self {
@@ -93,9 +93,9 @@ impl<V: Into<ContextTree>, const N: usize> From<[(&str, V); N]> for ContextTree 
     }
 }
 
-/// ==================================
-/// Display implementation for ContextTree
-/// ==================================
+// ==================================
+// Display implementation for ContextTree
+// ==================================
 
 impl Display for Primitive {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
