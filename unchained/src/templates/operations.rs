@@ -56,6 +56,11 @@ pub fn operation_params_and_children(operation: &str) -> Option<TemplateOperatio
 pub type TemplateOperation =
     fn(TemplateOperationCall, &ContextMap, &RenderOptions) -> WebResult<String>;
 
+/// Get the operation function from a template operation name
+/// If not found as a default name, it uses a custom operation from template options.
+/// Current reserved operation names:
+/// `"get"`, `"for"`, `"if`, `"component`, `"slot`, `"comment`, `"dbg`
+///
 /// Example template operation
 /// ```html
 /// {* if boolean {

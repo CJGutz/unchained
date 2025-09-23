@@ -7,6 +7,14 @@ pub enum Primitive {
     Bool(bool),
 }
 
+/// Enum for context information sent to the templates
+/// Use for primitives (str/num/bool), arrays, and maps
+///
+/// `Slot` contains identifier for where component children are inserted.
+/// See [component operation](crate::templates::operations::get_template_operation)
+///
+/// [ContextTree] implements the [From] trait for [isize], [&str], [String], [bool],
+/// arrays, and maps (from arrays of tuples or [HashMap]s)
 #[derive(Debug, Clone)]
 pub enum ContextTree {
     Leaf(Primitive),
@@ -132,13 +140,15 @@ impl Display for ContextTree {
 }
 
 /// Convert a vector of context trees to an array context tree
-/// __Deprecated__: Use ContextTree::from instead
+/// __Deprecated__: Use [ContextTree]::from instead
+#[deprecated(note = "Use [ContextTree]::from instead")]
 pub fn ctx_vec(parameters: Vec<ContextTree>) -> ContextTree {
     ContextTree::Array(Box::new(parameters))
 }
 
 /// Convert an array of key-value pairs of context trees to a branch context tree
-/// __Deprecated__: Use ContextTree::from instead
+/// __Deprecated__: Use [ContextTree]::from instead
+#[deprecated(note = "Use [ContextTree]::from instead")]
 pub fn ctx_map<const N: usize>(array: [(&str, ContextTree); N]) -> ContextTree {
     let mut string_array: Vec<(String, ContextTree)> = Vec::with_capacity(N);
     for (s, c) in array.iter() {
@@ -152,7 +162,8 @@ pub fn ctx_map<const N: usize>(array: [(&str, ContextTree); N]) -> ContextTree {
 }
 
 /// Convert a string slice to a context tree
-/// __Deprecated__: Use ContextTree::from instead
+/// __Deprecated__: Use [ContextTree]::from instead
+#[deprecated(note = "Use [ContextTree]::from instead")]
 pub fn ctx_str(str: &str) -> ContextTree {
     ContextTree::Leaf(Primitive::Str(str.to_string()))
 }

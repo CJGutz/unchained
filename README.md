@@ -13,26 +13,26 @@
 ```rust
 
 fn main() {
-    let mut context = HashMap::new();
+    let mut context: HashMap<String, ContextTree> = HashMap::new();
 
-    context.insert("page_links".to_string(), ctx_vec(vec![
-        ctx_map([("href", ctx_str("/#about")), ("label", ctx_str("About me"))]),
-        ctx_map([("href", ctx_str("/experience")), ("label", ctx_str("Experience"))]),
-        ctx_map([("href", ctx_str("/skills")), ("label", ctx_str("Skills"))]),
-    ]));
+    context.insert("page_links".to_string(), vec![
+            [("href", "/#about"), ("label", "About me")],
+            [("href", "/experience"), ("label", "Experience")],
+            [("href", "/skills"), ("label", "Skills")],
+        ].into()
+    );
 
-    let template = template("templates/landing-page.html", Some(context));
+    let template = load_template("landing-page.html", Some(context), &RenderOptions::empty()).unwrap();
 
     let routes = vec![
-        Route::new(GET, "/", ResponseContent::Str(
-            match &template {
-                Ok(template) => template.to_string(),
-                Err(_e) => panic!("Could not render template"),
-            }
-        )),
-        Route::new(GET, "/images/*", ResponseContent::FolderAccess)
+        Route::new(GET, "/", ResponseContent::Str(template),
+        ),
+        Route::new(GET, "/images/*", ResponseContent::FolderAccess),
     ];
-    start_server(routes, ServerOptions { address: Some("localhost:8080".to_string()) });
+
+    let mut server = Server::new(routes);
+    server.set_address("localhost:8080");
+    server.listen();
 }
 ```
 
