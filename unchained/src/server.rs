@@ -94,11 +94,7 @@ fn handle_connection(
     response_headers
         .entry("Content-Length".into())
         .or_insert(response_bytes.len().to_string());
-
-    let close_connection = *response_headers
-        .entry("Connection".to_string())
-        .or_default()
-        == "close";
+    response_headers.insert("Connection".into(), "keep-alive".into());
 
     let headers = options
         .default_headers
@@ -113,13 +109,7 @@ fn handle_connection(
             response.status_code, headers
         ))
         .and_then(|_| stream.write_all(&response_bytes))
-        .and_then(|_| {
-            if close_connection {
-                stream.shutdown(std::net::Shutdown::Write)
-            } else {
-                Ok(())
-            }
-        });
+        .and_then(|_| stream.write_all(b"\r\n"));
 
     if write.is_err() {
         return Err(Error::Connection("Could not write to stream.".to_string()));
