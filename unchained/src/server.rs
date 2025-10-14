@@ -13,7 +13,7 @@ use crate::{
 
 fn handle_connection(
     mut stream: TcpStream,
-    routes: &Vec<Route>,
+    routes: &[Route],
     options: &ServerOptions,
 ) -> WebResult<()> {
     let mut content_read = String::new();
@@ -127,13 +127,13 @@ pub struct ServerOptions {
 const ADDRESS: &str = "0.0.0.0:8080";
 
 pub struct Server {
-    pub routes: Arc<Vec<Route>>,
+    pub routes: Arc<[Route]>,
     pub options: ServerOptions,
 }
 
 impl Server {
     pub fn new(routes: Vec<Route>) -> Server {
-        let a: Arc<Vec<Route>> = Arc::from(routes);
+        let a: Arc<[Route]> = Arc::from(routes);
         Server {
             routes: a,
             options: ServerOptions {

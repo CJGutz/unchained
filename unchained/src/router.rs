@@ -163,7 +163,7 @@ fn compare_route_w_path_and_get_path_params(
     (match_route, params)
 }
 
-pub fn check_routes(routes: &Vec<Route>, request: Request) -> Response {
+pub fn check_routes(routes: &[Route], request: Request) -> Response {
     for route in routes {
         let route_verb = route.verb.to_string();
 
