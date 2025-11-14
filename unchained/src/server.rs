@@ -11,6 +11,13 @@ use crate::{
     workers::Workers,
 };
 
+/// Close Write part of stream and map io::Error to [Error::Connection]
+fn close_stream(stream: TcpStream) -> Result<(), Error> {
+    stream
+        .shutdown(Shutdown::Write)
+        .map_err(|e| Error::Connection(format!("Could not close TCP stream properly. {}", e)))
+}
+
 fn handle_connection(
     mut stream: TcpStream,
     routes: &[Route],
@@ -28,10 +35,11 @@ fn handle_connection(
     let (verb, path) = match content_read.split(' ').collect::<Vec<_>>()[..] {
         [verb, path, _version] => (verb, path),
         _ => {
+            close_stream(stream)?;
             return Err(Error::Connection(format!(
                 "Unimplemented request handle for: '{}",
                 content_read
-            )))
+            )));
         }
     };
 
@@ -42,6 +50,7 @@ fn handle_connection(
         content_read.clear();
         let res = buf_read.read_line(&mut content_read);
         if res.is_err() {
+            close_stream(stream)?;
             return Err(Error::Connection(
                 "Could not read from stream. Invalid buffer.".to_string(),
             ));
@@ -72,10 +81,11 @@ fn handle_connection(
     let body = match res {
         Ok(_) => String::from_utf8(buf).ok(),
         Err(_) => {
+            close_stream(stream)?;
             return Err(Error::Connection(format!(
                 "Failed to read body of content length {}.",
                 body_len
-            )))
+            )));
         }
     };
 
@@ -108,12 +118,16 @@ fn handle_connection(
             "HTTP/1.1 {}\r\n{}\r\n\r\n",
             response.status_code, headers
         ))
-        .and_then(|_| stream.write_all(&response_bytes))
-        .and_then(|_| stream.shutdown(Shutdown::Write));
+        .and_then(|_| stream.write_all(&response_bytes));
 
-    if write.is_err() {
-        return Err(Error::Connection("Could not write to stream.".to_string()));
+    if let Some(err) = write.err() {
+        close_stream(stream)?;
+        return Err(Error::Connection(format!(
+            "Could not write to stream. {}",
+            err
+        )));
     }
+    close_stream(stream)?;
     Ok(())
 }
 
