@@ -50,11 +50,14 @@
         <main class="grow container relative">
           {* slot default *}
         </main>
-        <footer class="p-4 z-10 md:flex md:items-center md:justify-around md:p-6 bg-off-white shadow-[0px_0px_10px_2px_rgba(0,0,0,0.3)]">
+        <footer class="p-4 z-10 place-items-center grid grid-cols-1 gap-4 md:grid-cols-3 bg-off-white shadow-[0px_0px_10px_2px_rgba(0,0,0,0.3)]">
           <span class="text-sm text-gray-500 sm:text-center">
             © <!-- -->{* get current_year *}<!-- --> <a class="underline" target="_blank" href="https://github.com/cjgutz">Carl Gützkow</a>
           </span>
-          <ul class="flex flex-wrap items-center mt-3 md:mt-0">
+          <a class="scale-50" title="{* get brainmade.tooltip *}" href="{* get brainmade.link *}">
+            {* component images/icons/brainmade-black.svg *}
+          </a> 
+          <ul class="flex flex-wrap items-center">
             {* for link in page_links {
             <li class="mvn-button"><a class="mr-4 text-sm text-gray-500 hover:text-blue-500 md:mr-6" href="{* get link.href *}">{* get link.label *}</a></li>
             } *}

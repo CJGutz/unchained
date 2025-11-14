@@ -121,6 +121,17 @@ fn main() {
 
     let current_year: isize = current_year().try_into().unwrap();
     context_base.insert("current_year".to_string(), current_year.into());
+    context_base.insert(
+        "brainmade".to_string(),
+        [
+            ("link", "https://brainmade.org"),
+            (
+                "tooltip",
+                "Yes, I did watch the youtube video from No Boilerplate...",
+            ),
+        ]
+        .into(),
+    );
 
     let page_links = [
         [("href", "/#about"), ("label", "About me")],
