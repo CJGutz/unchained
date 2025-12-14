@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    io::{BufRead, BufReader, Read, Write},
+    io::{BufRead, BufReader, BufWriter, Read, Write},
     net::{Shutdown, TcpListener, TcpStream},
     sync::Arc,
 };
@@ -19,7 +19,18 @@ fn close_stream(stream: TcpStream) -> Result<(), Error> {
 }
 
 fn handle_connection(
-    mut stream: TcpStream,
+    stream: TcpStream,
+    routes: &[Route],
+    options: &ServerOptions,
+) -> WebResult<()> {
+    let res = respond_to_request(&stream, routes, options);
+    close_stream(stream)?;
+    res
+}
+
+
+fn respond_to_request(
+    mut stream: &TcpStream,
     routes: &[Route],
     options: &ServerOptions,
 ) -> WebResult<()> {
@@ -32,10 +43,10 @@ fn handle_connection(
         ));
     }
 
+    print!("[Request] {}", &content_read);
     let (verb, path) = match content_read.split(' ').collect::<Vec<_>>()[..] {
         [verb, path, _version] => (verb, path),
         _ => {
-            close_stream(stream)?;
             return Err(Error::Connection(format!(
                 "Unimplemented request handle for: '{}",
                 content_read
@@ -46,11 +57,12 @@ fn handle_connection(
     let mut headers = HashMap::new();
     let mut content_read = String::new();
 
+    println!("\t[Buffer] {:?}", &buf_read);
+    // Read headers from stream
     loop {
         content_read.clear();
         let res = buf_read.read_line(&mut content_read);
         if res.is_err() {
-            close_stream(stream)?;
             return Err(Error::Connection(
                 "Could not read from stream. Invalid buffer.".to_string(),
             ));
@@ -68,7 +80,9 @@ fn handle_connection(
             break;
         }
     }
+    println!("\t[Req Headers] {:?}", &headers);
 
+    // Read body from stream
     // HTTP/1.1 Content-Length SHOULD be included in the headers when body is present
     // See https://www.rfc-editor.org/rfc/rfc9110.html#name-content-length
     let body_len = headers
@@ -81,7 +95,6 @@ fn handle_connection(
     let body = match res {
         Ok(_) => String::from_utf8(buf).ok(),
         Err(_) => {
-            close_stream(stream)?;
             return Err(Error::Connection(format!(
                 "Failed to read body of content length {}.",
                 body_len
@@ -99,6 +112,7 @@ fn handle_connection(
 
     let response = check_routes(routes, request);
 
+    // Add headers to response
     let mut response_headers = response.headers.clone();
     let response_bytes = response.bytes.unwrap_or_default();
     response_headers
@@ -113,21 +127,18 @@ fn handle_connection(
         .map(|(k, v)| format!("{}: {}", k, v))
         .collect::<Vec<String>>()
         .join("\r\n");
-    let write = stream
-        .write_fmt(format_args!(
-            "HTTP/1.1 {}\r\n{}\r\n\r\n",
-            response.status_code, headers
-        ))
-        .and_then(|_| stream.write_all(&response_bytes));
 
-    if let Some(err) = write.err() {
-        close_stream(stream)?;
-        return Err(Error::Connection(format!(
-            "Could not write to stream. {}",
-            err
-        )));
+    {
+        let mut buf_writer = BufWriter::new(&mut stream);
+        buf_writer
+            .write_fmt(format_args!(
+                "HTTP/1.1 {}\r\n{}\r\n\r\n",
+                response.status_code, headers
+            ))
+            .and_then(|_| buf_writer.write_all(&response_bytes))?;
+        buf_writer.flush()?
     }
-    close_stream(stream)?;
+
     Ok(())
 }
 
