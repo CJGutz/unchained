@@ -24,7 +24,7 @@ fn handle_connection(
     routes: &[Route],
     options: &ServerOptions,
 ) -> WebResult<()> {
-    for _ in 0..options.threads {
+    for _ in 0..options.threads-1 {
         let res = respond_to_request(&stream, routes, options);
         if let Ok(should_close) = res.as_ref() {
             if *should_close {
@@ -179,7 +179,7 @@ impl Server {
             routes: a,
             options: ServerOptions {
                 address: ADDRESS.to_string(),
-                threads: 4,
+                threads: 6,
                 default_headers: HashMap::new(),
             },
         }
@@ -208,7 +208,7 @@ impl Server {
         for stream in address.incoming() {
             match stream {
                 Ok(stream) => {
-                    let _ = stream.set_read_timeout(Some(Duration::from_millis(100)));
+                    let _ = stream.set_read_timeout(Some(Duration::from_millis(50)));
                     let routes = self.routes.clone();
                     let options = self.options.clone();
                     workers.post(move || handle_connection(stream, &routes, &options));

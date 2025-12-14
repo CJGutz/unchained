@@ -7,15 +7,6 @@ div {
   align-items: center;
 }
 
-@font-face {
-  font-family: 'Poppins';
-  src: url('/Poppins/Poppins-Regular.ttf');
-}
-
-html > * {
-    font-family: Poppins, system-ui;
-}
-
 a,
 button {
   transition: all 300ms ease-in-out;
