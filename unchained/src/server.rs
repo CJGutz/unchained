@@ -2,7 +2,8 @@ use std::{
     collections::HashMap,
     io::{BufRead, BufReader, BufWriter, Read, Write},
     net::{Shutdown, TcpListener, TcpStream},
-    sync::Arc, time::Duration,
+    sync::Arc,
+    time::Duration,
 };
 
 use crate::{
@@ -36,7 +37,6 @@ fn handle_connection(
     close_stream(stream)?;
     Ok(())
 }
-
 
 /// Returns true if connection should close
 fn respond_to_request(
@@ -113,7 +113,10 @@ fn respond_to_request(
     };
 
     // Should close? Default to true if not found
-    let close = !matches!(headers.get("Connection").map(|s| s.as_str()), Some("keep-alive"));
+    let close = !matches!(
+        headers.get("Connection").map(|s| s.as_str()),
+        Some("keep-alive")
+    );
 
     let request = Request {
         verb: verb.to_string(),
