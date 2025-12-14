@@ -2,7 +2,7 @@ use std::{
     collections::HashMap,
     io::{BufRead, BufReader, BufWriter, Read, Write},
     net::{Shutdown, TcpListener, TcpStream},
-    sync::Arc,
+    sync::Arc, time::Duration,
 };
 
 use crate::{
@@ -23,17 +23,27 @@ fn handle_connection(
     routes: &[Route],
     options: &ServerOptions,
 ) -> WebResult<()> {
-    let res = respond_to_request(&stream, routes, options);
+    for _ in 0..options.threads {
+        let res = respond_to_request(&stream, routes, options);
+        if let Ok(should_close) = res.as_ref() {
+            if *should_close {
+                break;
+            }
+        }
+        println!("Waiting for next request...");
+    }
+    println!("Closing request");
     close_stream(stream)?;
-    res
+    Ok(())
 }
 
 
+/// Returns true if connection should close
 fn respond_to_request(
     mut stream: &TcpStream,
     routes: &[Route],
     options: &ServerOptions,
-) -> WebResult<()> {
+) -> WebResult<bool> {
     let mut content_read = String::new();
     let mut buf_read = BufReader::new(&mut stream);
     let res = buf_read.read_line(&mut content_read);
@@ -102,6 +112,9 @@ fn respond_to_request(
         }
     };
 
+    // Should close? Default to true if not found
+    let close = !matches!(headers.get("Connection").map(|s| s.as_str()), Some("keep-alive"));
+
     let request = Request {
         verb: verb.to_string(),
         path: path.to_string(),
@@ -139,7 +152,7 @@ fn respond_to_request(
         buf_writer.flush()?
     }
 
-    Ok(())
+    Ok(close)
 }
 
 #[derive(Clone)]
@@ -192,6 +205,7 @@ impl Server {
         for stream in address.incoming() {
             match stream {
                 Ok(stream) => {
+                    let _ = stream.set_read_timeout(Some(Duration::from_millis(100)));
                     let routes = self.routes.clone();
                     let options = self.options.clone();
                     workers.post(move || handle_connection(stream, &routes, &options));
