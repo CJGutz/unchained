@@ -24,7 +24,7 @@ fn handle_connection(
     routes: &[Route],
     options: &ServerOptions,
 ) -> WebResult<()> {
-    for _ in 0..options.threads-1 {
+    for _ in 0..options.threads - 1 {
         let res = respond_to_request(&stream, routes, options);
         if let Ok(should_close) = res.as_ref() {
             if *should_close {
