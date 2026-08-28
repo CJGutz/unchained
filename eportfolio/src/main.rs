@@ -233,6 +233,7 @@ fn main() {
         folder_access("/Poppins/Poppins-Regular.ttf"),
         folder_access("favicon.ico"),
         folder_access("cv.pdf"),
+        folder_access("typst/cv.pdf"),
         folder_access("robots.txt"),
         folder_access("templates/css/*"),
         Route::new(
