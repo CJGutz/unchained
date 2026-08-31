@@ -53,6 +53,7 @@
 )
 - GPA: 8.5\/10
 - Topics: Programming Languages, Computer Graphics, Quantum Computing, Geodatabases,
+- Master Thesis: Deadlock Handling Strategies on Quantum Network Nodes
 
 #edu(
   institution: "NTNU",
@@ -65,6 +66,7 @@
 )
 - GPA: 4.76\/5
 - Topics: Software Engineering and Software Development Life Cycles
+- Bachelor Thesis: A Tool to Analyze Verifiable Credentials (eIDAS 2.0)
 
 == Work Experience
 
@@ -98,8 +100,8 @@
   dates: dates-helper(start-date: "Jun 2021", end-date: "May 2024"),
 )
 - Grew the tech team from 3 to 10 engaged members contributing to our digital infrastructure
-- Upgraded our digital infrastructure by managing servers with backups, monitoring, security, physical move, and (unfinished) matrix communication.
-- Organized social events and workshops for the organization
+- Upgraded managed servers with backups, monitoring, security, physical move, and (unfinished) matrix communication.
+//- Organized social events and workshops for the organization
 - Strengthened Hackerspaces' position to keep funding for longer
 - Lead an organization growing from 10 to 30+ members
 
