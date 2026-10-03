@@ -7,7 +7,7 @@
 #let github = "github.com/cjgutz"
 #let linkedin = "linkedin.com/in/carl-gutzkow"
 //#let phone = "+1 (xxx) xxx-xxxx"
-#let personal-site = "https://gutzkow.com"
+#let personal-site = "gutzkow.com"
 
 #show: resume.with(
   author: name,
@@ -26,6 +26,11 @@
   author-position: left,
   personal-info-position: left,
 )
+
+== How I Help Your Business
+Hire me if you need a passionate and opiniated software developer eager to understand the domain and the customer's needs.
+I combine fast minimal viable experiments, grounded decisions, cuirosity to understand depth, team work, and software development life cycles to deliver on promises that requires responsibility and communication.
+
 
 /*
  * Lines that start with == are formatted into section headings
@@ -49,7 +54,7 @@
   degree: "MSc in Computer Science",
 
   // Uncomment the line below if you want edu formatting to be consistent with everything else
-  // consistent: true
+  consistent: true
 )
 - GPA: 8.5\/10
 - Topics: Programming Languages, Computer Graphics, Quantum Computing, Geodatabases,
@@ -62,7 +67,7 @@
   degree: "BSc in Computer Engineering",
 
   // Uncomment the line below if you want edu formatting to be consistent with everything else
-  // consistent: true
+  consistent: true
 )
 - GPA: 4.76\/5
 - Topics: Software Engineering and Software Development Life Cycles
@@ -77,9 +82,9 @@
   dates: dates-helper(start-date: "June 2022", end-date: "Present"),
 )
 
-- Key employee: Developer from the company's founding, started as a project at Atlas.
-- Created the foundation of the entire application still used today
-- Specialized in programmatic GIS analyses, but responsibility over all parts of the stack
+- Co-founder of Telescope building the backend foundation of the entire application still used to this day
+- Built the product allowing the company to raise 37 Million NOK
+- Specialized in automating GIS analyses, but responsibility over all parts of the stack
 
 #work(
   title: "Student Representative for Software Engineering NTNU",
@@ -88,8 +93,6 @@
   dates: dates-helper(start-date: "2023", end-date: "2024"),
 )
 - Student representative in the evaluation committee for my study programme, performed every 5 years
-- Gathered feedback from students brought forward to the committee
-- Discussed when each course should be tought and how the study stays trusted by future employers
 
 == Voluntary Experience
 
@@ -114,11 +117,9 @@
 - Worked in a software development team for the study's student organization.
 - Took part in the Backend development of collectible website achievements, strikes for missing events, the gallery, a capture-the-flag event, and continuous bug fixes.
 
-*Reference Groups*
+*Reference Groups* - Dialog between students and professors
 
-A reference group creates an open dialog between a professor and the students providing feedback to the professor.\ I participated in the following reference groups:
-
-Software Development 2 with agile project, Network Programming, and Machine Learning
+For the courses: Software Development 2 with agile project, Network Programming, and Machine Learning
 
 == References
 _Contact info available on request_
@@ -130,9 +131,9 @@ CEO and Co-founder of Telescope
 Quantum Internet Division, TU Delft \
 Supervisor for my MSc thesis
 
-*Grethe Sandstrak*
-Associate Professor \
-Department of Computer Science, NTNU
+// *Grethe Sandstrak*
+// Associate Professor \
+// Department of Computer Science, NTNU
 
 
 
